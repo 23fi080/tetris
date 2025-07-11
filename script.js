@@ -514,6 +514,9 @@ class TetrisBattle {
                     this.elements.gameOverOverlay.style.display = 'none'; // Hide overlay on error
                     this.elements.countdownOverlay.style.display = 'none'; // Hide countdown on error
                     break;
+                case 'hideOpponentBoard':
+                    this.hideOpponentBoard(message.duration || 3000);
+                    break;
             }
         }
         
@@ -892,38 +895,15 @@ class TetrisBattle {
 
         // === 追加: スキルを発動する関数 ===
         activateSkill() {
-            if (!this.skillReady) {
-                console.log("スキルがまだ使えません。");
-                return;
+            if (this.selectedCharacter === 'char1' && this.skillReady) {
+                // 相手のフィールドを覆い隠す（しましま模様）
+                this.sendMessage('hideOpponentBoard', { duration: 3000 }); // 3秒間隠す
+                this.skillGauge = 0;
+                this.skillReady = false;
+                this.updateSkillGaugeDisplay();
+            } else if (this.selectedCharacter !== 'char1') {
+                // 他キャラのスキルは従来通り（必要ならここに追加）
             }
-
-            console.log("スキル発動！");
-            
-            // スキル効果: 自分のおじゃまブロックを2ライン消す
-            let clearedCount = 0;
-            for (let i = 0; i < 2; i++) {
-                // 下から探索しておじゃまブロックの行を探す
-                for (let y = this.ROWS - 1; y >= 0; y--) {
-                    // 行がおじゃまブロック（'#808080'）で構成されているかチェック
-                    if (this.board[y].every(cell => cell === '#808080' || cell === 0)) {
-                        this.board.splice(y, 1); // その行を削除
-                        const newRow = Array(this.COLS).fill(0);
-                        this.board.unshift(newRow); // 一番上に新しい空の行を追加
-                        clearedCount++;
-                        break; // 1行消したら内側のループを抜けて次の行を探す
-                    }
-                }
-            }
-
-            if(clearedCount > 0){
-                this.displayAttackIndicator(clearedCount, 'スキル発動！', true);
-            }
-            
-            // ゲージをリセット
-            this.skillReady = false;
-            this.skillGauge = 0;
-            this.updateSkillGaugeDisplay();
-            this.draw(); // ボードを再描画
         }
 
 
@@ -1322,7 +1302,8 @@ class TetrisBattle {
 
             this.canHold = true; // Allow holding again
             this.clearLines();
-            this.sendMessage('update', { board: this.board, score: this.score, level: this.level, hp: this.currentHp, character: this.selectedCharacter });
+            // 修正: 盤面送信時のtypeを'boardUpdate'に
+            this.sendMessage('boardUpdate', { board: this.board, score: this.score, level: this.level, hp: this.currentHp, character: this.selectedCharacter });
         }
 
         /**
@@ -1482,9 +1463,11 @@ class TetrisBattle {
             if (this.currentHp < 0) this.currentHp = 0;
 
             // HP回復（ヒールリンク）
-            if (this.selectedCharacter === 'char1' && numLines >= 2) {
+            if (this.selectedCharacter === 'char1' && numLines >= 2 && this.skillGauge >= this.SKILL_GAUGE_MAX) {
                 this.currentHp += Math.floor(numLines / 2); // 2ライン以上で回復
                 if (this.currentHp > this.maxHp) this.currentHp = this.maxHp;
+                this.skillGauge = 0; // スキルゲージをリセット
+                this.updateSkillGaugeDisplay(); // スキルゲージの表示を更新
             }
 
             this.updateHpDisplay();
@@ -1538,6 +1521,24 @@ class TetrisBattle {
             // For now, it just logs the HP state.
             console.log(`Player HP: ${this.currentHp}/${this.maxHp}, Opponent HP: ${this.opponentHp}/${this.maxHp}`);
         }
+
+        // === 追加: 相手フィールドを隠す処理 ===
+        hideOpponentBoard(duration) {
+            const canvas = this.elements.opponentCanvas;
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            // しましま模様で黒く覆う
+            ctx.save();
+            ctx.globalAlpha = 0.85;
+            for (let y = 0; y < canvas.height; y += 16) {
+                ctx.fillStyle = (y / 16) % 2 === 0 ? '#000' : '#222';
+                ctx.fillRect(0, y, canvas.width, 16);
+            }
+            ctx.restore();
+            // 一定時間後に再描画
+            setTimeout(() => this.draw(), duration);
+        }
+        // === ここまで ===
     }
 
     // Initialize the game when the DOM is fully loaded
