@@ -315,7 +315,7 @@
             font-weight: bold;
         }
 
-      
+        
         
         .waiting { color: #ffd700; }
         .ready { color: #00ff00; }
@@ -647,10 +647,94 @@
           text-align: left;
           display: none;
         }
+
+        /* HP Bar Styles */
+        .hp-bar-container {
+            width: 20px; /* HPバーの幅を調整 */
+            height: 360px; /* HPバーの高さをボードに合わせる */
+            background-color: rgba(0, 0, 0, 0.5);
+            border: 2px solid #fff;
+            border-radius: 8px;
+            position: relative;
+            overflow: hidden;
+            display: flex; /* Flexboxを使って縦に配置 */
+            flex-direction: column-reverse; /* 下から上にHPが溜まるように */
+        }
+
+        .hp-bar-fill {
+            width: 100%;
+            height: 100%; /* 初期値は100% */
+            background: linear-gradient(to top, #4CAF50, #8BC34A); /* 緑色のグラデーション */
+            transition: height 0.3s ease-out;
+        }
+        /* HPが減ると色が赤に変わるアニメーション用（お好みで） */
+        .hp-bar-fill.low-hp {
+            background: linear-gradient(to top, #FF0000, #FF5733);
+        }
+
+        /* スキルゲージのスタイル */
+        .skill-gauge-container {
+            width: 80%; /* 幅を調整 */
+            max-width: 200px; /* 最大幅 */
+            margin: 15px auto 10px auto;
+            text-align: center;
+            color: #e0e0e0;
+            font-size: 0.95em;
+        }
+
+        .skill-gauge-label {
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        .skill-gauge-outer {
+            width: 100%;
+            height: 20px; /* ゲージの高さ */
+            background-color: rgba(0, 0, 0, 0.5);
+            border: 2px solid #555;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .skill-gauge-fill {
+            width: 0%; /* 初期値 */
+            height: 100%;
+            background: linear-gradient(90deg, #8A2BE2, #00BFFF); /* 紫から水色のグラデーション */
+            transition: width 0.3s ease-out;
+            border-radius: 8px; /* 角を丸く */
+        }
+
+        /* スキルボタンのスタイル */
+        .skill-button {
+            background: linear-gradient(45deg, #00BFFF, #8A2BE2); /* スキルらしいグラデーション */
+            color: white;
+            padding: 10px 20px;
+            margin-top: 10px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1em;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            font-weight: bold;
+        }
+
+        .skill-button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(0,0,0,0.4);
+            background: linear-gradient(45deg, #2eccfa, #9B59B6);
+        }
+
+        .skill-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+            background: #555; /* 無効時は暗い色に */
+        }
     </style>
 </head>
 <body>
-    <!-- 画面左端中央に能力説明を固定配置 -->
     <div id="playerAbility" class="player-ability ability-side" style="display: none;"></div>
     <div class="container">
         <a href="https://ja.cooltext.com"><img src="https://images.cooltext.com/5733904.png" width="593" height="111" alt="BATTLE TETRIS" /></a>
@@ -690,24 +774,28 @@
                     <div class="character-display" id="playerCharacterDisplay">
                         <img src="" alt="Player Character" id="playerCharacterImg">
                     </div>
-                    <!-- 能力説明表示枠を削除（外に移動したため） -->
-                    <!-- Hold piece display -->
                     <div class="hold-piece-display">
                         <canvas id="holdPieceCanvas" width="72" height="72"></canvas>
                     </div>
-                    <!-- Main canvas is now a direct child of player-section -->
                     <div class="board-and-hp-wrapper">
                         <canvas id="playerCanvas" width="180" height="360"></canvas>
-                        <!-- Player HP Bar 削除 -->
+                        <div class="hp-bar-container" id="playerHpBarContainer">
+                            <div class="hp-bar-fill" id="playerHpBarFill"></div>
+                        </div>
                     </div>
-                    <!-- Next piece display positioned absolutely relative to .player-section -->
                     <div class="next-piece-display">
                         <canvas id="nextPieceCanvas" width="72" height="72"></canvas>
                     </div>
                     <div class="info">
                         <div class="score">スコア: <span id="playerScore">0</span></div>
-                        <div class="level">レベル: <span id="playerLevel">1</span></div> <!-- Added player level display -->
+                        <div class="level">レベル: <span id="playerLevel">1</span></div> </div>
+                    <div class="skill-gauge-container">
+                        <div class="skill-gauge-label">スキルゲージ</div>
+                        <div class="skill-gauge-outer">
+                            <div class="skill-gauge-fill" id="playerSkillGaugeFill"></div>
+                        </div>
                     </div>
+                    <button id="playerSkillButton" class="skill-button" onclick="gameInstance.activateSkill()" disabled>スキル発動！</button>
                     <div id="playerStatus" class="status waiting">待機中...</div>
                     <button id="readyBtn" onclick="setReady()" disabled>準備完了</button>
                     <div class="controls">
@@ -722,20 +810,26 @@
                     </div>
                     <div class="board-and-hp-wrapper">
                         <canvas id="opponentCanvas" width="180" height="360"></canvas>
-                        <!-- Opponent HP Bar 削除 -->
+                        <div class="hp-bar-container" id="opponentHpBarContainer">
+                            <div class="hp-bar-fill" id="opponentHpBarFill"></div>
+                        </div>
                     </div>
                     <div class="info">
                         <div class="score">スコア: <span id="opponentScore">0</span></div>
-                        <div class="level">レベル: <span id="opponentLevel">1</span></div> <!-- Added opponent level display -->
+                        <div class="level">レベル: <span id="opponentLevel">1</span></div> </div>
+                    <div class="skill-gauge-container">
+                        <div class="skill-gauge-label">スキルゲージ</div>
+                        <div class="skill-gauge-outer">
+                            <div class="skill-gauge-fill" id="opponentSkillGaugeFill"></div>
+                        </div>
                     </div>
-                    <!-- Opponent does not need a "next piece" display from this client's perspective -->
+                    <button id="opponentSkillButton" class="skill-button" disabled>スキル発動中...</button>
                     <div id="opponentStatus" class="status waiting">待机中...</div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Game Over Overlay -->
     <div id="gameOverOverlay" class="game-over-overlay">
         <div class="game-over-content">
             <h2 id="gameOverMessage"></h2>
@@ -744,12 +838,10 @@
         </div>
     </div>
 
-    <!-- Countdown Overlay -->
     <div id="countdownOverlay" class="countdown-overlay">
         <span id="countdownNumber"></span>
     </div>
 
-    <!-- Settings Modal -->
     <div id="settingsModal" class="settings-modal">
         <div class="settings-content">
             <h2>キー設定</h2>
@@ -881,16 +973,29 @@
                 softDrop: 'ArrowDown',
                 hardDrop: 'ArrowUp',
                 rotate: ' ',
-                hold: 'v'
+                hold: 'v',
+                skill: 'z' // 新しくスキル発動キーを追加 (例: Zキー)
             };
 
             // キャラクター能力説明
             this.characterAbilities = {
-                'char1': 'ヒールリンク：同時に複数ラインを消すとHPが多めに回復',
-                'char2': 'ダウンバリア：HP50%以下になるとダメージ20%カット',
-                'char3': 'チェインブースト：連続してラインを消すと攻撃力が徐々に上昇（リセット式）',
+                'char1': 'ヒールリンク：HPを大きく回復する',
+                'char2': 'ダウンバリア：HP50%以下で受けるダメージを大幅にカットする',
+                'char3': 'チェインブースト：攻撃力が一時的に上昇し、一度だけ致死ダメージを無効化する',
                 'default': '能力なし' // Default ability description
             };
+
+            // 新しいプロパティ
+            this.skillGauge = 0; // 現在のスキルゲージ量
+            this.maxSkillGauge = 100; // スキルゲージの最大値
+            this.skillGaugePerLine = 10; // 1ライン消すごとに溜まるゲージ量
+            this.isSkillActive = false; // スキルが発動中か
+            this.skillDuration = 5000; // スキルの持続時間 (ミリ秒)
+            this.skillTimeoutId = null; // スキル終了のタイマーID
+
+            // キャラクター固有のスキル状態
+            this.char3AttackBoost = 1.0; // char3の攻撃力倍率 (チェインブースト)
+            this.lastStandUsed = false; // char3のラストスタンドが使用されたか
 
             // Execute initialization
             this.init();
@@ -936,6 +1041,15 @@
                 settingsError: document.getElementById('settingsError'),
                 characterSelection: document.getElementById('characterSelection'), 
                 playerAbility: document.getElementById('playerAbility'),
+                // 新しく追加した要素
+                playerHpBarContainer: document.getElementById('playerHpBarContainer'),
+                playerHpBarFill: document.getElementById('playerHpBarFill'),
+                opponentHpBarContainer: document.getElementById('opponentHpBarContainer'),
+                opponentHpBarFill: document.getElementById('opponentHpBarFill'),
+                playerSkillGaugeFill: document.getElementById('playerSkillGaugeFill'), 
+                playerSkillButton: document.getElementById('playerSkillButton'),     
+                opponentSkillGaugeFill: document.getElementById('opponentSkillGaugeFill'), 
+                opponentSkillButton: document.getElementById('opponentSkillButton'),     
             };
 
             // Safely get Canvas contexts
@@ -957,6 +1071,8 @@
             this.elements.gameOverOverlay.style.display = 'none'; // Ensure hidden on init
             this.elements.countdownOverlay.style.display = 'none'; // Ensure hidden on init
             this.updateHpDisplay(); // Initial HP bar display
+            this.updateSkillGaugeDisplay(); // 初期スキルゲージ表示を追加
+            this.elements.playerSkillButton.disabled = true; // 最初は無効にする
             this.setupCharacterSelection(); // Setup character selection listeners
             // Set initial player character image
             if (this.elements.playerCharacterImg) {
@@ -1115,7 +1231,7 @@
 
             // Close existing connection if any before creating a new one
             if (this.ws && (this.ws.readyState === WebSocket.OPEN || this.ws.readyState === WebSocket.CONNECTING)) {
-                this.ws.close(); 
+                this.ws.close();  
             }
             this.ws = new WebSocket(wsUrl);
 
@@ -1139,7 +1255,7 @@
                 this.elements.connectionStatus.textContent = "サーバーとの接続が切れました。";
                 this.elements.connectionStatus.className = 'status loser';
                 // If the game was active and not explicitly ended by user action (returnToHome), try to reconnect
-                if (!this.gameEnded) { 
+                if (!this.gameEnded) {  
                     this.attemptReconnect();
                 } else if (this.gameStarted) { // Game was active, but ended (e.g. by opponent leaving or game over)
                     this.endGame("接続エラー: 相手が退出しました"); // Indicate opponent leaving if game was active
@@ -1209,6 +1325,7 @@
                     this.elements.gameOverOverlay.style.display = 'none'; // Ensure hidden when joining room
                     this.elements.countdownOverlay.style.display = 'none'; // Ensure hidden when joining room
                     this.updateHpDisplay(); // Initial HP display on join
+                    this.updateSkillGaugeDisplay(); // Initial skill gauge display on join
                     // Set player's character image
                     if (this.elements.playerCharacterImg) {
                         this.elements.playerCharacterImg.src = this.characterImages[this.selectedCharacter] || this.characterImages['default'];
@@ -1252,14 +1369,42 @@
                 case 'opponentUpdate':
                     console.log("Opponent Update Message, Character:", message.character); // Log opponent character
                     this.updateOpponent(message);
+                    // 相手のスキルゲージも更新
+                    if (this.elements.opponentSkillGaugeFill && message.skillGauge !== undefined) {
+                        const opponentSkillPercentage = (message.skillGauge / this.maxSkillGauge) * 100;
+                        this.elements.opponentSkillGaugeFill.style.width = `${opponentSkillPercentage}%`;
+                    }
+                    // 相手のスキルボタンの状態も同期する（ここでは有効化/無効化だけ。発動中表示は後で調整）
+                    if (this.elements.opponentSkillButton && message.skillGauge !== undefined) {
+                        this.elements.opponentSkillButton.disabled = (message.skillGauge < this.maxSkillGauge);
+                    }
                     break;
                 case 'attack':
                     // Server might not send attackType, so default it for visual feedback
                     this.addAttackLines(message.lines, message.attackType || 'ATTACK');
                     // HP情報も更新
                     if (message.hp !== undefined) {
-                        this.opponentHp = Number(message.hp);
+                        this.opponentHp = Number(message.hp); // 相手のHPはサーバーから来たものを更新
                         this.updateHpDisplay();
+                    }
+                    break;
+                case 'skillActivated': // 相手がスキルを発動したという通知
+                    if (message.playerId !== this.playerId) {
+                        console.log(`相手 (${message.playerId}) がスキル (${message.character}) を発動しました！`);
+                        // 相手のゲージを空にする
+                        if (this.elements.opponentSkillGaugeFill) {
+                            this.elements.opponentSkillGaugeFill.style.width = '0%';
+                        }
+                        if (this.elements.opponentSkillButton) {
+                            this.elements.opponentSkillButton.disabled = true; // 相手のボタンは無効に
+                            this.elements.opponentSkillButton.textContent = 'スキル発動中...'; // 発動中表示
+                        }
+                        // スキル持続時間後に表示を元に戻す（サーバー側が制御するのが理想ですが、簡易的なクライアント側での表示）
+                        setTimeout(() => {
+                            if (this.elements.opponentSkillButton) {
+                                this.elements.opponentSkillButton.textContent = 'スキル発動中...'; // 元に戻す
+                            }
+                        }, this.skillDuration);
                     }
                     break;
                 case 'gameEnd':
@@ -1440,7 +1585,7 @@
                     console.log(`Opponent character set to: ${opponent.character}, URL: ${this.elements.opponentCharacterImg.src}`);
                 }
             } else {
-                 // If opponent is null, reset opponent display
+                   // If opponent is null, reset opponent display
                 this.elements.opponentTitle.textContent = '相手';
                 this.elements.opponentStatus.textContent = '待機中...';
                 this.elements.opponentStatus.className = 'status waiting';
@@ -1575,9 +1720,21 @@
             this.currentHp = this.maxHp; // Reset HP
             this.opponentHp = this.maxHp; // Reset opponent HP on player side
 
+            // スキル関連のプロパティをリセット
+            this.skillGauge = 0;
+            this.isSkillActive = false;
+            this.char3AttackBoost = 1.0;
+            this.lastStandUsed = false; // ラストスタンド使用状況もリセット
+            if (this.skillTimeoutId) {
+                clearTimeout(this.skillTimeoutId);
+                this.skillTimeoutId = null;
+            }
+
             this.elements.playerScore.textContent = this.score;
             this.elements.playerLevel.textContent = this.level; // Update player level display
-            this.updateHpDisplay(); // Update HP bar display on reset
+            this.updateHpDisplay(); // HPバーの更新
+            this.updateSkillGaugeDisplay(); // スキルゲージの更新
+            this.elements.playerSkillButton.disabled = true; // ボタンを無効に
             this.draw();
         }
         
@@ -1607,6 +1764,8 @@
                     this.rotate();
                 } else if (e.key.toLowerCase() === this.controls.hold.toLowerCase()) { // Case-insensitive hold
                     this.holdPiece();
+                } else if (e.key.toLowerCase() === this.controls.skill.toLowerCase()) { // スキル発動キーの処理
+                    this.activateSkill();
                 }
 
                 this.draw(); // Redraw after each key press
@@ -1625,7 +1784,8 @@
                     `${keyToDisplay(this.controls.moveLeft)}/${keyToDisplay(this.controls.moveRight)}/${keyToDisplay(this.controls.softDrop)}で移動 | ` +
                     `${keyToDisplay(this.controls.hardDrop)}で瞬時落下 | ` +
                         `${keyToDisplay(this.controls.rotate)}で回転 | ` +
-                    `${keyToDisplay(this.controls.hold)}でホールド`;
+                    `${keyToDisplay(this.controls.hold)}でホールド | ` +
+                    `${keyToDisplay(this.controls.skill)}でスキル`; // スキルキーの表示を追加
             }
         }
 
@@ -2059,7 +2219,8 @@
                 board: this.board,
                 score: this.score,
                 level: this.level,
-                hp: this.currentHp // Send current HP
+                hp: this.currentHp,
+                skillGauge: this.skillGauge // スキルゲージの情報を追加
             });
 
             // Reset the rotation flag for the *next* piece (important for T-spin detection)
@@ -2096,15 +2257,10 @@
             if (clearedLinesCount > 0) {
                 this.consecutiveLineClears++; // Increment combo counter
 
-                // --- char1: ヒールリンク ---
-                if (this.selectedCharacter === 'char1' && clearedLinesCount >= 2) {
-                    // 消したライン数分HP回復（最大HPを超えない）
-                    this.currentHp = Math.min(this.maxHp, this.currentHp + clearedLinesCount);
-                    this.updateHpDisplay();
-                }
+                // **スキルゲージを溜める**
+                this.fillSkillGauge(clearedLinesCount * this.skillGaugePerLine); // 消したライン数に応じてゲージを増やす
 
                 // Base score for lines cleared (common Tetris scoring)
-                // 1 line: 100, 2 lines: 300, 3 lines: 500, 4 lines: 800
                 this.score += [0, 100, 300, 500, 800][clearedLinesCount] * this.level;  
 
                 let tSpinDetails = { isTSpin: false };
@@ -2139,10 +2295,10 @@
             // REN bonus starts from 2nd consecutive clear (combo = 2)
             if (this.consecutiveLineClears > 1) {
                 let renBonus = this.getRenBonus(this.consecutiveLineClears);
-                // --- char3: チェインブースト ---
-                if (this.selectedCharacter === 'char3') {
-                    renBonus = Math.ceil(renBonus * 1.5); // 攻撃力1.5倍（小数切り上げ）
-                }
+                // char3のチェインブーストはスキル発動時に適用されるので、ここではコメントアウト
+                // if (this.selectedCharacter === 'char3') {
+                //     renBonus = Math.ceil(renBonus * 1.5);
+                // }
                 totalAttackLines += renBonus;
                 attackTypeDescription.push(`${this.consecutiveLineClears}REN`); // 日本語表示用に調整
             }
@@ -2166,13 +2322,9 @@
                 attackTypeDescription.push('All Clear'); // 日本語表示用に調整
             }
 
-            // Character Ability: Char2 (Guard Charge) - Recover HP on 2+ line clear
-            if (this.selectedCharacter === 'char2' && clearedLinesCount >= 2) {
-                if (this.currentHp < this.maxHp) {
-                    this.currentHp = Math.min(this.maxHp, this.currentHp + 1); // Recover 1 HP, not exceeding max
-                    console.log("Char2 ability: Guard Charge activated! HP recovered to " + this.currentHp);
-                    this.updateHpDisplay(); // Update HP bar immediately
-                }
+            // char3のチェインブーストの攻撃力補正は、スキル発動中のみ適用
+            if (this.isSkillActive && this.selectedCharacter === 'char3') {
+                totalAttackLines = Math.ceil(totalAttackLines * this.char3AttackBoost);
             }
 
             // Update player's general game stats (lines, level, speed)
@@ -2188,7 +2340,7 @@
 
             // Send attack lines to opponent if any
             if (totalAttackLines > 0) {
-                this.sendMessage('linesCleared', {  
+                this.sendMessage('linesCleared', {
                     lines: totalAttackLines,
                     // Send a descriptive text for the attack type
                     attackType: attackTypeDescription.length > 0 ? attackTypeDescription.join(' ') : 'ラインクリア', // 日本語表示用にスペース区切り
@@ -2196,7 +2348,6 @@
                 });
                 // Display sent attack indicator for the player
                 this.displayAttackIndicator(totalAttackLines, attackTypeDescription.join(' '), true); // 日本語表示用にスペース区切り
-                // ローカルでの相手HP更新を削除 - サーバーからの更新に依存
             }
         }
         
@@ -2210,26 +2361,21 @@
             if (this.gameEnded) return;
 
             let actualDamage = count;
-            // Character Ability: Char1 (Down Barrier) - Damage reduction
-            if (this.selectedCharacter === 'char1') {
-                if (this.currentHp <= this.maxHp * 0.5) { // HP 50% or less
-                    actualDamage = Math.ceil(count * 0.8); // 20% damage cut, round up to ensure at least 1 damage
-                    console.log(`Char1 ability: Down Barrier activated! Incoming damage: ${count}, Reduced to: ${actualDamage}`);
-                }
+            // Character Ability: Char2 (Down Barrier) - Damage reduction
+            // スキルが発動中で、かつHPが50%以下の時にダメージカット
+            if (this.selectedCharacter === 'char2' && this.isSkillActive && this.currentHp <= this.maxHp * 0.5) {
+                actualDamage = Math.ceil(count * 0.8); // 20% damage cut
+                console.log(`Char2 ability: Down Barrier activated! Incoming damage: ${count}, Reduced to: ${actualDamage}`);
             }
             
             // Character Ability: Char3 (Last Stand) - Negate lethal damage once at 1 HP
-            if (this.selectedCharacter === 'char3') {
-                if (this.currentHp === 1 && actualDamage >= 1) { // If HP is 1 and lethal damage incoming
-                    // Check if this is the first time Last Stand is used
-                    if (!this.lastStandUsed) {
-                        this.lastStandUsed = true; // Mark as used
-                        actualDamage = 0; // Negate all incoming damage
-                        console.log("Char3 ability: Last Stand activated! Lethal damage negated once.");
-                    } else {
-                        console.log("Char3 ability: Last Stand already used. Taking damage normally.");
-                    }
-                }
+            // スキルが発動中、かつHP1で致命的なダメージを受ける場合、1度だけダメージを0にする
+            if (this.selectedCharacter === 'char3' && this.isSkillActive && this.currentHp === 1 && actualDamage >= 1 && !this.lastStandUsed) {
+                this.lastStandUsed = true; // Mark as used
+                actualDamage = 0; // Negate all incoming damage
+                console.log("Char3 ability: Last Stand activated! Lethal damage negated once.");
+                // ラストスタンドは一度発動したらスキルは終了する
+                this.deactivateSkill();
             }
 
 
@@ -2248,7 +2394,6 @@
             for (let i = 0; i < count; i++) {
                 // If the top row is already occupied, adding new lines might mean game over (but HP check handles this first)
                 if (this.board[0].some(cell => cell !== 0)) {
-                    // This scenario should now be largely covered by HP check, but keeping for robustness
                     console.warn("Board full, but HP check should have ended game.");
                 }
                 this.board.shift(); // Remove the top row
@@ -2269,7 +2414,174 @@
          * @description Updates the width of the HP bar fill elements based on current HP.
          */
         updateHpDisplay() {
-            // HPバー表示処理を無効化
+            if (this.elements.playerHpBarFill) {
+                const playerHpPercentage = (this.currentHp / this.maxHp) * 100;
+                this.elements.playerHpBarFill.style.height = `${playerHpPercentage}%`;
+                // HPが半分以下になったら赤色にする
+                if (playerHpPercentage <= 50) {
+                    this.elements.playerHpBarFill.classList.add('low-hp');
+                } else {
+                    this.elements.playerHpBarFill.classList.remove('low-hp');
+                }
+            }
+            if (this.elements.opponentHpBarFill) {
+                const opponentHpPercentage = (this.opponentHp / this.maxHp) * 100;
+                this.elements.opponentHpBarFill.style.height = `${opponentHpPercentage}%`;
+                // 相手HPも半分以下になったら赤色にする
+                if (opponentHpPercentage <= 50) {
+                    this.elements.opponentHpBarFill.classList.add('low-hp');
+                } else {
+                    this.elements.opponentHpBarFill.classList.remove('low-hp');
+                }
+            }
+        }
+
+        /**
+         * @function updateSkillGaugeDisplay
+         * @description Updates the width of the skill gauge fill element based on current skillGauge.
+         */
+        updateSkillGaugeDisplay() {
+            if (this.elements.playerSkillGaugeFill) {
+                const skillPercentage = (this.skillGauge / this.maxSkillGauge) * 100;
+                this.elements.playerSkillGaugeFill.style.width = `${skillPercentage}%`;
+                if (this.skillGauge >= this.maxSkillGauge && !this.isSkillActive) {
+                    this.elements.playerSkillButton.disabled = false;
+                    this.elements.playerSkillButton.textContent = 'スキル発動！';
+                } else if (this.isSkillActive) {
+                    this.elements.playerSkillButton.disabled = true;
+                    this.elements.playerSkillButton.textContent = 'スキル発動中！';
+                } else {
+                    this.elements.playerSkillButton.disabled = true;
+                    this.elements.playerSkillButton.textContent = 'スキル発動！'; // ゲージが足りない間も表示は同じ
+                }
+            }
+            // 相手のスキルゲージも更新する（サーバーから情報を受け取った場合）
+            // 現状、相手のスキルゲージは表示のみで、サーバーから情報が送られてくることを想定しています。
+            // 例: message.opponent.skillGauge を受け取る
+            // if (this.elements.opponentSkillGaugeFill && this.opponentData && this.opponentData.skillGauge !== undefined) {
+            //     const opponentSkillPercentage = (this.opponentData.skillGauge / this.maxSkillGauge) * 100;
+            //     this.elements.opponentSkillGaugeFill.style.width = `${opponentSkillPercentage}%`;
+            // }
+        }
+
+        /**
+         * @function fillSkillGauge
+         * @description Increases the skill gauge.
+         * @param {number} amount - The amount to increase the gauge by.
+         */
+        fillSkillGauge(amount) {
+            if (this.isSkillActive) return; // スキル発動中はゲージは溜まらない
+
+            this.skillGauge = Math.min(this.maxSkillGauge, this.skillGauge + amount);
+            this.updateSkillGaugeDisplay();
+        }
+
+        /**
+         * @function activateSkill
+         * @description Activates the selected character's skill if the gauge is full.
+         */
+        activateSkill() {
+            if (this.skillGauge < this.maxSkillGauge || this.isSkillActive || this.gameEnded || !this.gameStarted) {
+                return; // ゲージが満タンでない、スキル発動中、ゲーム終了/開始前は発動できない
+            }
+
+            this.skillGauge = 0; // ゲージを消費
+            this.isSkillActive = true;
+            this.updateSkillGaugeDisplay();
+            this.elements.playerSkillButton.disabled = true; // ボタンを無効に
+            this.elements.playerSkillButton.textContent = 'スキル発動中！';
+
+            console.log(`スキル発動！キャラクター: ${this.selectedCharacter}`);
+            // スキル発動時の表示を中央に
+            this.displayAttackIndicator(0, `${this.characterAbilities[this.selectedCharacter].split('：')[0]}発動！`, true);
+
+
+            switch (this.selectedCharacter) {
+                case 'char1':
+                    this.skill_HealLink();
+                    break;
+                case 'char2':
+                    this.skill_DownBarrier();
+                    break;
+                case 'char3':
+                    this.skill_ChainBoost();
+                    break;
+                default:
+                    console.warn("Unknown character skill activated:", this.selectedCharacter);
+            }
+
+            // スキル効果の持続時間を設定
+            this.skillTimeoutId = setTimeout(() => {
+                this.deactivateSkill();
+            }, this.skillDuration);
+
+            // サーバーにスキル発動を通知
+            this.sendMessage('skillActivated', { character: this.selectedCharacter });
+        }
+
+        /**
+         * @function deactivateSkill
+         * @description Deactivates the currently active skill.
+         */
+        deactivateSkill() {
+            if (!this.isSkillActive) return;
+
+            this.isSkillActive = false;
+            this.char3AttackBoost = 1.0; // ChainBoostの効果をリセット
+            // this.lastStandUsed = false; // LastStandのフラグはスキル発動時とダメージ受けた時にリセット
+
+            if (this.skillTimeoutId) {
+                clearTimeout(this.skillTimeoutId);
+                this.skillTimeoutId = null;
+            }
+
+            this.updateSkillGaugeDisplay();
+            this.elements.playerSkillButton.disabled = (this.skillGauge < this.maxSkillGauge); // ゲージが満タンでなければ無効
+            this.elements.playerSkillButton.textContent = 'スキル発動！';
+
+            console.log("スキル終了！");
+            this.displayAttackIndicator(0, `スキル効果終了`, false);
+
+            // サーバーにスキル終了を通知することも可能 (オプション)
+            // this.sendMessage('skillDeactivated');
+        }
+
+        // --- キャラクター固有のスキルメソッド ---
+
+        /**
+         * @function skill_HealLink
+         * @description ヒールリンク (Char1) スキルの効果: HPを回復
+         */
+        skill_HealLink() {
+            const healAmount = Math.floor(this.maxHp * 0.3); // 例: 最大HPの30%回復
+            this.currentHp = Math.min(this.maxHp, this.currentHp + healAmount);
+            this.updateHpDisplay();
+            console.log(`ヒールリンク発動！HPが ${healAmount} 回復しました。現在のHP: ${this.currentHp}`);
+        }
+
+        /**
+         * @function skill_DownBarrier
+         * @description ダウンバリア (Char2) スキルの効果: 一定時間ダメージ軽減
+         * ダメージ軽減は addAttackLines() で isSkillActive をチェックして適用されます。
+         * ここでは、スキルが発動したことを表示するだけ。
+         */
+        skill_DownBarrier() {
+            console.log(`ダウンバリア発動！${this.skillDuration / 1000}秒間ダメージ軽減します。`);
+            // ダメージ軽減ロジックは addAttackLines 内で isSkillActive の状態を見て処理される
+        }
+
+        /**
+         * @function skill_ChainBoost
+         * @description チェインブースト (Char3) スキルの効果: 攻撃力上昇 + ラストスタンド
+         * 攻撃力上昇は clearLines() で isSkillActive と char3AttackBoost をチェックして適用されます。
+         * ラストスタンドは addAttackLines() で isSkillActive と lastStandUsed をチェックして適用されます。
+         */
+        skill_ChainBoost() {
+            this.char3AttackBoost = 2.0; // 例: 攻撃力2倍 (一時的)
+            this.lastStandUsed = false; // スキル発動でラストスタンドのフラグをリセット
+            console.log(`チェインブースト発動！${this.skillDuration / 1000}秒間攻撃力が上昇し、ラストスタンドが有効になります。`);
+            // 攻撃力上昇ロジックは clearLines 内で isSkillActive の状態を見て処理される
+            // ラストスタンドロジックは addAttackLines 内で isSkillActive の状態を見て処理される
         }
 
 
@@ -2398,7 +2710,8 @@
          */
         displayAttackIndicator(lines, type, isSent) {
             const indicator = document.createElement('div');
-            indicator.textContent = `${isSent ? '攻撃！' : ''}${type} +${lines} Lines`;
+            // スキル発動時のメッセージにライン数は表示しない
+            indicator.textContent = (type.includes('発動！') || type.includes('スキル効果終了')) ? type : `${isSent ? '攻撃！' : ''}${type} +${lines} Lines`;
             indicator.className = isSent ? 'attack-sent-indicator' : 'attack-indicator';
 
             // Append to the container or game area for central display
