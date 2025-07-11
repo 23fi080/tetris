@@ -1,0 +1,2436 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>テトリスバトル</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 10px;
+            background: #f4f4f4 url('https://i.postimg.cc/DZfryWsM/scifi-main-menu.jpg') center center / cover no-repeat;
+            font-family: 'Arial', sans-serif;
+            color: rgb(68, 65, 65);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh; /* Ensure body takes full viewport height */
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.05); /* Slightly darker background for container */
+            border-radius: 15px;
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+        }
+        h1 {
+            text-align: center;
+            color: #fff;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+            margin-bottom: 20px;
+        }
+        .lobby {
+            text-align: center;
+            padding: 20px;
+            margin-bottom: 20px;
+            width: 100%;
+        }
+        .lobby input {
+            width: calc(50% - 20px);
+            max-width: 180px;
+            margin: 8px;
+            padding: 10px 15px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border-radius: 8px;
+            box-shadow: inset 0 2px 5px rgba(0,0,0,0.2);
+        }
+        .lobby input::placeholder {
+            color: rgba(255, 255, 255, 0.7);
+        }
+        .lobby button {
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+            color: white;
+            padding: 12px 25px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            margin-top: 15px;
+        }
+        .lobby button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(0,0,0,0.4);
+            background: linear-gradient(45deg, #ff8e8e, #6ae0d5);
+        }
+        .lobby button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        /* Character Selection Styles */
+        .character-selection {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+
+        .character-option {
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            padding: 10px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-align: center;
+            color: white;
+            font-weight: bold;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 80px; /* Fixed width for character option */
+            height: 100px; /* Fixed height for character option */
+            position: relative; /* For tooltip positioning */
+        }
+
+        .character-option:hover {
+            background: rgba(255, 255, 255, 0.2);
+            border-color: #4ecdc4;
+            transform: translateY(-3px);
+        }
+
+        .character-option.selected {
+            background: linear-gradient(45deg, #4ecdc4, #00c6ff);
+            border-color: #fff;
+            box-shadow: 0 0 15px rgba(78, 205, 196, 0.6);
+            transform: translateY(-3px);
+        }
+
+        .character-option img {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            object-fit: cover;
+            margin-bottom: 5px;
+            border: 2px solid rgba(255, 255, 255, 0.5);
+        }
+
+        .character-name {
+            font-size: 0.9em;
+            margin-top: 5px;
+            color: white;
+        }
+
+        /* Character ability tooltip */
+        .character-tooltip {
+            position: absolute;
+            bottom: 110px; /* Position above the character option */
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.9);
+            color: white;
+            padding: 10px 15px;
+            border-radius: 8px;
+            font-size: 0.85em;
+            white-space: normal; /* Allow text to wrap */
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+            pointer-events: none;
+            max-width: 250px; /* Increased max-width */
+            min-width: 200px; /* Set minimum width */
+            text-align: center;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            line-height: 1.4; /* Better line spacing */
+        }
+
+        .character-tooltip::after {
+            content: '';
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            border: 5px solid transparent;
+            border-top-color: rgba(0, 0, 0, 0.9);
+        }
+
+        .character-option:hover .character-tooltip {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .game-area {
+            display: none; /* Hidden by default */
+            justify-content: center;
+            gap: 20px;
+            align-items: flex-start;
+            flex-wrap: wrap; /* Allow wrapping on smaller screens */
+            position: relative; /* For attack indicator positioning */
+        }
+        .player-section {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(10px);
+            border-radius: 12px;
+            padding: 15px;
+            text-align: center;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            flex: 1; /* Allow sections to grow/shrink */
+            min-width: 280px; /* Minimum width for each player section */
+            display: flex; /* Outer flex: column */
+            flex-direction: column; /* Stack h3, player-board-container, info, status, buttons vertically */
+            align-items: center; /* Center all contents horizontally */
+            position: relative; /* Crucial for absolute positioning of next-piece-display */
+        }
+        .player-section.opponent {
+            opacity: 0.8;
+            filter: grayscale(20%);
+        }
+
+        /* Character Display in Game Area */
+        .character-display {
+            width: 60px;
+            height: 60px;
+            margin: 5px auto 10px auto; /* Center and provide some spacing */
+            border-radius: 50%;
+            overflow: hidden;
+            border: 2px solid #fff;
+            box-shadow: 0 0 8px rgba(255, 255, 255, 0.5);
+        }
+
+        .character-display img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        /* New wrapper for board and HP bar */
+        .board-and-hp-wrapper {
+            display: flex;
+            flex-direction: row; /* Arrange items horizontally */
+            align-items: center; /* Vertically align items in the middle */
+            gap: 10px; /* Space between board and HP bar */
+            margin-bottom: 10px; /* Space below the board+HP group */
+        }
+
+        /* Main player canvas */
+        .player-section canvas#playerCanvas {
+            border: 3px solid #fff;
+            border-radius: 8px;
+            background: #000;
+            display: block;
+            /* Removed auto margins, now handled by flexbox */
+        }
+
+        /* Opponent canvas styling */
+        .player-section canvas#opponentCanvas {
+            border: 3px solid #fff; /* 白い枠を追加 */
+            border-radius: 8px;
+            background: #000;
+            display: block;
+            /* Removed auto margins, now handled by flexbox */
+        }
+
+
+        /* Next piece display styles */
+        .next-piece-display {
+            position: absolute; /* Position relative to .player-section */
+            top: 1px; /* Aligns closer to the top */
+            right: -10px; /* Aligns closer to the right */
+            padding: 5px;
+            
+            border-radius: 8px;
+            
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            z-index: 100; /* Ensure it's above other elements if there's any overlap */
+        }
+        .next-piece-display canvas {
+            width: 72px; /* Adjusted width */
+            height: 72px; /* Adjusted height */
+            border: 2px solid #555;
+            background: #000;
+            border-radius: 5px;
+        }
+
+        .hold-piece-display {
+            position: absolute; 
+            top: 1px;
+            left: -10px;
+            padding: 5px;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            z-index: 100;
+        }
+
+        .hold-piece-display canvas {
+            width: 72px;
+            height: 72px;
+            border: 2px solid #555;
+            background: #000;
+            border-radius: 5px;
+        }
+
+        .info {
+            margin-top: 10px;
+        }
+        .score {
+            font-size: 1.1em;
+            font-weight: bold;
+            margin: 5px 0;
+            color: #e0e0e0;
+        }
+        .level { /* Added style for level display */
+            font-size: 1.1em;
+            font-weight: bold;
+            margin: 5px 0;
+            color: #e0e0e0;
+        }
+        .status {
+            font-size: 0.9em;
+            margin: 8px 0;
+            padding: 8px;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.15);
+            font-weight: bold;
+        }
+
+      
+        
+        .waiting { color: #ffd700; }
+        .ready { color: #00ff00; }
+        .playing { color: #00bfff; }
+        .winner { color: #00ff00; background: rgba(0, 255, 0, 0.25); }
+        .loser { color: #ff4444; background: rgba(255, 68, 68, 0.25); }
+        
+        /* General button style (used for game-over buttons as well) */
+        button {
+            background: linear-gradient(45deg, #00c6ff, #0072ff);
+            color: white;
+            padding: 10px 20px;
+            margin-top: 10px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+        }
+        button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.4);
+            background: linear-gradient(45deg, #2eccfa, #2a9d8f);
+        }
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        /* Specific styling for the ready button to center it */
+        #readyBtn {
+            display: block; /* Make it a block element */
+            width: fit-content; /* Shrink to content width */
+            margin-left: auto; 
+            margin-right: auto; /* Center horizontally */
+            margin-top: 15px; /* Adjust top margin as needed */
+            padding: 12px 30px; /* Make it a bit bigger */
+            font-size: 16px;
+        }
+
+        .controls {
+            font-size: 0.85em;
+            opacity: 0.9;
+            margin-top: 15px;
+            line-height: 1.4;
+            color: #c0c0c0;
+        }
+        .attack-indicator {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(255, 0, 0, 0.85);
+            color: white;
+            padding: 8px 15px;
+            border-radius: 8px;
+            font-size: 1.2em;
+            font-weight: bold;
+            animation: attackPulse 0.8s ease-out forwards; /* Changed duration */
+            pointer-events: none;
+            z-index: 1000;
+            white-space: nowrap; /* Prevent text wrapping */
+        }
+        .attack-sent-indicator { /* For player's own attacks */
+            position: absolute;
+            top: 50%; /* Adjusted slightly for visibility */
+            left: 25%; /* Near player's board */
+            transform: translate(-50%, -50%);
+            background: rgba(0, 200, 255, 0.8); /* Blueish for sent attacks */
+            color: white;
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 1.0em;
+            font-weight: bold;
+            animation: attackPulse 0.8s ease-out forwards;
+            pointer-events: none;
+            z-index: 1000;
+            white-space: nowrap;
+        }
+        @keyframes attackPulse {
+            0% { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
+            50% { opacity: 1; transform: translate(-50%, -50%) scale(1.1); }
+            100% { opacity: 0; transform: translate(-50%, -50%) scale(1); }
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            .game-area {
+                flex-direction: column;
+                align-items: center;
+            }
+            .player-section {
+                width: 100%;
+                margin-bottom: 15px;
+                padding-top: 15px; /* Reset top padding for consistency */
+            }
+            /* On small screens, position the next piece display below the main canvas */
+            .player-section canvas#playerCanvas {
+                margin: 0 auto 10px auto; /* Re-center main canvas with bottom margin */
+            }
+            .next-piece-display {
+                position: static; /* Reset positioning for small screens */
+                margin-top: 10px; /* Add margin when stacked below */
+                margin-left: auto;
+                margin-right: auto; /* Center horizontally when static */
+            }
+            .lobby input {
+                width: calc(100% - 20px); /* Full width on small screens */
+                max-width: none;
+                margin: 5px 0;
+            }
+        }
+
+        /* Game Over Overlay Styles */
+        .game-over-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7); /* Dark semi-transparent background */
+            display: none; /* Hidden by default */
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+            flex-direction: column;
+            text-align: center;
+            padding: 20px;
+            box-sizing: border-box; /* Include padding in width/height */
+        }
+
+        .game-over-content {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            max-width: 90%;
+            color: white;
+        }
+
+        .game-over-content h2 {
+            font-size: 2em;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+
+        .game-over-content button {
+            display: block; /* Make buttons stack vertically */
+            width: 80%; /* Make buttons take more width */
+            max-width: 250px;
+            margin: 15px auto; /* Center buttons with more vertical spacing */
+            padding: 12px 25px;
+            font-size: 1.1em;
+            border-radius: 10px;
+            box-shadow: 0 6px 15px rgba(0,0,0,0.4);
+            transition: all 0.3s ease;
+        }
+
+        .game-over-content button:first-of-type {
+            background: linear-gradient(45deg, #4CAF50, #8BC34A); /* Greenish for play again */
+        }
+        .game-over-content button:first-of-type:hover {
+            background: linear-gradient(45deg, #66BB6A, #9CCC65);
+        }
+
+        .game-over-content button:last-of-type {
+            background: linear-gradient(45deg, #f44336, #FF7043); /* Reddish for home */
+        }
+        .game-over-content button:last-of-type:hover {
+            background: linear-gradient(45deg, #EF5350, #FF8A65);
+        }
+
+        /* New Countdown Overlay Styles */
+        .countdown-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8); /* Darker background */
+            display: none; /* Hidden by default */
+            justify-content: center;
+            align-items: center;
+            z-index: 3000; /* Higher than game over overlay */
+        }
+
+        #countdownNumber {
+            font-size: 5em; /* Large font */
+            font-weight: bold;
+            color: #00ff00; /* Bright color */
+            text-shadow: 0 0 10px #00ff00, 0 0 20px #00ff00, 0 0 30px #00ff00; /* Glow effect */
+            animation: pulseScale 1s infinite alternate; /* Simple pulse animation */
+        }
+
+        @keyframes pulseScale {
+            from { transform: scale(0.8); opacity: 0.7; }
+            to { transform: scale(1.2); opacity: 1; }
+        }
+
+        /* Settings Button */
+        .settings-btn {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 5px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        /* Settings Modal */
+        .settings-modal {
+            display: none; /* Hidden by default */
+            position: fixed;
+            z-index: 4000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.6);
+            justify-content: center;
+            align-items: center;
+        }
+
+        .settings-content {
+            background: rgba(20, 20, 30, 0.9);
+            backdrop-filter: blur(10px);
+            margin: auto;
+            padding: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            width: 80%;
+            max-width: 400px;
+            border-radius: 10px;
+            color: white;
+        }
+
+        .settings-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .settings-grid label {
+            text-align: right;
+        }
+
+        .key-input {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 8px;
+            border-radius: 5px;
+            text-align: center;
+            cursor: pointer;
+        }
+
+        .key-input:focus {
+            background: rgba(0, 150, 255, 0.3);
+            outline: none;
+        }
+
+        .settings-error {
+            color: #ff6b6b;
+            margin-bottom: 15px;
+            text-align: center;
+            min-height: 1.2em;
+        }
+
+        .settings-buttons {
+            display: flex;
+            justify-content: space-around;
+        }
+
+        .player-ability {
+            margin: 8px 0 8px 32px;
+            padding: 16px 20px;
+            background: rgba(0,0,0,0.32);
+            color: #fff;
+            border-radius: 12px;
+            font-size: 1em;
+            font-weight: bold;
+            min-width: 200px;
+            max-width: 320px;
+            text-align: left;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.12);
+            border: 1.5px solid rgba(255,255,255,0.18);
+            display: block;
+            line-height: 1.6;
+        }
+        @media (max-width: 900px) {
+            .container > div[style*='flex-direction: row'] {
+                flex-direction: column !important;
+                align-items: stretch !important;
+            }
+            .player-ability {
+                margin-left: 0 !important;
+                margin-top: 18px !important;
+                max-width: 100%;
+            }
+        }
+
+        /* CSS追加 */
+        .ability-side {
+          position: fixed;
+          left: 0;
+          top: 50%;
+          transform: translateY(-50%);
+          z-index: 1000;
+          min-width: 180px;
+          max-width: 260px;
+          color: #fff;
+          background: rgba(0,0,0,0.5);
+          border-radius: 12px;
+          padding: 18px 20px;
+          font-size: 1.1em;
+          box-shadow: 0 2px 12px rgba(0,0,0,0.12);
+          text-align: left;
+          display: none;
+        }
+    </style>
+</head>
+<body>
+    <!-- 画面左端中央に能力説明を固定配置 -->
+    <div id="playerAbility" class="player-ability ability-side" style="display: none;"></div>
+    <div class="container">
+        <a href="https://ja.cooltext.com"><img src="https://images.cooltext.com/5733904.png" width="593" height="111" alt="BATTLE TETRIS" /></a>
+        <div class="lobby" id="lobby">
+            <div>
+                <input type="text" id="playerName" placeholder="プレイヤー名" value="Player1">
+                <input type="text" id="roomId" placeholder="ルームID (空白で自動)" value="">
+            </div>
+
+            <div class="character-selection" id="characterSelection">
+                <div class="character-option selected" data-character="char1">
+                    <img src="https://i.postimg.cc/TY2h2Q16/depixelizer-1453453341767-Photoroom.png" alt="ヒールリンク">
+                    <div class="character-name">ヒールリンク</div>
+                    <div class="character-tooltip">同時に複数ラインを消すとHPが多めに回復</div>
+                </div>
+                <div class="character-option" data-character="char2">
+                    <img src="https://i.postimg.cc/g0h2tTSv/ガードチャージdepixelizer-1453453073611-Photoroom.png" alt="ダウンバリア">
+                    <div class="character-name">ダウンバリア</div>
+                    <div class="character-tooltip">HP50%以下になるとダメージ20%カット</div>
+                </div>
+                <div class="character-option" data-character="char3">
+                    <img src="https://i.postimg.cc/JzGnZnjY/depixelizer-1453453095778-Photoroom.png" alt="チェインブースト">
+                    <div class="character-name">チェインブースト</div>
+                    <div class="character-tooltip">連続してラインを消すと攻撃力が徐々に上昇（リセット式）</div>
+                </div>
+            </div>
+            <button onclick="joinRoom()">ゲームに参加</button>
+            <div id="connectionStatus" class="status">サーバーに接続中...</div>
+            
+            <button id="settingsBtn" class="settings-btn">キー設定</button>
+        </div>
+        
+        <div style="display: flex; flex-direction: row; justify-content: center; align-items: flex-start; width: 100%;">
+            <div class="game-area" id="gameArea">
+                <div class="player-section">
+                    <h3 id="playerTitle">あなた</h3>
+                    <div class="character-display" id="playerCharacterDisplay">
+                        <img src="" alt="Player Character" id="playerCharacterImg">
+                    </div>
+                    <!-- 能力説明表示枠を削除（外に移動したため） -->
+                    <!-- Hold piece display -->
+                    <div class="hold-piece-display">
+                        <canvas id="holdPieceCanvas" width="72" height="72"></canvas>
+                    </div>
+                    <!-- Main canvas is now a direct child of player-section -->
+                    <div class="board-and-hp-wrapper">
+                        <canvas id="playerCanvas" width="180" height="360"></canvas>
+                        <!-- Player HP Bar 削除 -->
+                    </div>
+                    <!-- Next piece display positioned absolutely relative to .player-section -->
+                    <div class="next-piece-display">
+                        <canvas id="nextPieceCanvas" width="72" height="72"></canvas>
+                    </div>
+                    <div class="info">
+                        <div class="score">スコア: <span id="playerScore">0</span></div>
+                        <div class="level">レベル: <span id="playerLevel">1</span></div> <!-- Added player level display -->
+                    </div>
+                    <div id="playerStatus" class="status waiting">待機中...</div>
+                    <button id="readyBtn" onclick="setReady()" disabled>準備完了</button>
+                    <div class="controls">
+                        ← → ↓ で移動 | ↑ で瞬時落下 | スペースで回転 | V/Bでホールド
+                    </div>
+                </div>
+                
+                <div class="player-section opponent">
+                    <h3 id="opponentTitle">相手</h3>
+                    <div class="character-display" id="opponentCharacterDisplay">
+                        <img src="" alt="Opponent Character" id="opponentCharacterImg">
+                    </div>
+                    <div class="board-and-hp-wrapper">
+                        <canvas id="opponentCanvas" width="180" height="360"></canvas>
+                        <!-- Opponent HP Bar 削除 -->
+                    </div>
+                    <div class="info">
+                        <div class="score">スコア: <span id="opponentScore">0</span></div>
+                        <div class="level">レベル: <span id="opponentLevel">1</span></div> <!-- Added opponent level display -->
+                    </div>
+                    <!-- Opponent does not need a "next piece" display from this client's perspective -->
+                    <div id="opponentStatus" class="status waiting">待机中...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Game Over Overlay -->
+    <div id="gameOverOverlay" class="game-over-overlay">
+        <div class="game-over-content">
+            <h2 id="gameOverMessage"></h2>
+            <button id="playAgainBtn">もう一度対戦</button>
+            <button id="returnToHomeBtn">ホームに戻る</button>
+        </div>
+    </div>
+
+    <!-- Countdown Overlay -->
+    <div id="countdownOverlay" class="countdown-overlay">
+        <span id="countdownNumber"></span>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settingsModal" class="settings-modal">
+        <div class="settings-content">
+            <h2>キー設定</h2>
+            <div class="settings-grid">
+                <label for="keyMoveLeft">左移動:</label>
+                <input type="text" id="keyMoveLeft" class="key-input" readonly>
+                <label for="keyMoveRight">右移動:</label>
+                <input type="text" id="keyMoveRight" class="key-input" readonly>
+                <label for="keySoftDrop">ソフトドロップ:</label>
+                <input type="text" id="keySoftDrop" class="key-input" readonly>
+                <label for="keyHardDrop">ハードドロップ:</label>
+                <input type="text" id="keyHardDrop" class="key-input" readonly>
+                <label for="keyRotate">回転:</label>
+                <input type="text" id="keyRotate" class="key-input" readonly>
+                <label for="keyHold">ホールド:</label>
+                <input type="text" id="keyHold" class="key-input" readonly>
+            </div>
+            <div id="settingsError" class="settings-error"></div>
+            <div class="settings-buttons">
+                <button id="saveSettingsBtn">保存</button>
+                <button id="cancelSettingsBtn">キャンセル</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    class TetrisBattle {
+        constructor() {
+            // Initialize elements first
+            this.initializeElements();
+            
+            // WebSocket related
+            this.ws = null;
+            this.playerId = '';
+            this.roomId = '';
+            this.reconnectInterval = 1000; // Initial reconnect interval in ms (1 second)
+            this.reconnectAttempts = 0; // Number of reconnection attempts
+            this.maxReconnectInterval = 30000; // Max reconnect interval in ms (30 seconds)
+            this.reconnectTimeoutId = null; // Reconnection timer ID
+
+            // Game state
+            this.gameStarted = false;
+            this.gameEnded = false;
+            this.animationFrameId = null;
+
+            // Tetris settings
+            this.COLS = 10;
+            this.ROWS = 20;
+            this.BLOCK_SIZE = 18; // Each block is 18x18 pixels
+            this.board = this.createEmptyBoard();
+            
+            // Opponent's board
+            this.opponentBoard = this.createEmptyBoard();
+
+            this.score = 0;
+            this.level = 1;
+            this.lines = 0; // Total lines cleared
+            this.dropTime = 0;
+            this.dropInterval = 1000; // ms
+
+            // HP settings
+            this.maxHp = 10; // Maximum HP for a player
+            this.currentHp = this.maxHp; // Current player HP
+            this.opponentHp = this.maxHp; // Opponent HP
+
+            // Character selection
+            this.selectedCharacter = 'char1'; // Default character
+            this.characterImages = { // Map character IDs to image URLs
+                'char1': 'https://i.postimg.cc/TY2h2Q16/depixelizer-1453453341767-Photoroom.png',
+                'char2': 'https://i.postimg.cc/g0h2tTSv/ガードチャージdepixelizer-1453453073611-Photoroom.png',
+                'char3': 'https://i.postimg.cc/JzGnZnjY/depixelizer-1453453095778-Photoroom.png',
+                // Add a default placeholder for unknown characters
+                'default': 'https://placehold.co/50x50/CCCCCC/000000?text=?'
+            };
+
+            // Tetromino pieces (shapes and colors)
+            // Added original index for T-Spin detection
+            this.pieces = [
+                { s: [[1,1,1,1]], c: '#00f0f0' }, // I (Cyan) - Index 0
+                { s: [[1,1],[1,1]], c: '#f0f000' }, // O (Yellow) - Index 1
+                { s: [[0,1,0],[1,1,1]], c: '#a000f0' }, // T (Purple) - Index 2
+                { s: [[0,1,1],[1,1,0]], c: '#00f000' }, // S (Green) - Index 3
+                { s: [[1,1,0],[0,1,1]], c: '#f00000' }, // Z (Red) - Index 4
+                { s: [[1,0,0],[1,1,1]], c: '#0000f0' }, // J (Blue) - Index 5
+                { s: [[0,0,1],[1,1,1]], c: '#f0a000' }  // L (Orange) - Index 6
+            ];
+
+            // SRS Wall Kick Data
+            // For J, L, S, T, Z pieces
+            this.srsKicks = {
+                '0-1': [[0, 0], [-1, 0], [-1, 1], [0, -2], [-1, -2]],
+                '1-0': [[0, 0], [1, 0], [1, -1], [0, 2], [1, 2]],
+                '1-2': [[0, 0], [1, 0], [1, -1], [0, 2], [1, 2]],
+                '2-1': [[0, 0], [-1, 0], [-1, 1], [0, -2], [-1, -2]],
+                '2-3': [[0, 0], [1, 0], [1, 1], [0, -2], [1, -2]],
+                '3-2': [[0, 0], [-1, 0], [-1, -1], [0, 2], [-1, 2]],
+                '3-0': [[0, 0], [-1, 0], [-1, -1], [0, 2], [-1, 2]],
+                '0-3': [[0, 0], [1, 0], [1, 1], [0, -2], [1, -2]]
+            };
+            // For I piece
+            this.srsIKicks = {
+                '0-1': [[0, 0], [-2, 0], [1, 0], [-2, -1], [1, 2]],
+                '1-0': [[0, 0], [2, 0], [-1, 0], [2, 1], [-1, -2]],
+                '1-2': [[0, 0], [-1, 0], [2, 0], [-1, 2], [2, -1]],
+                '2-1': [[0, 0], [1, 0], [-2, 0], [1, -2], [-2, 1]],
+                '2-3': [[0, 0], [2, 0], [-1, 0], [2, 1], [-1, -2]],
+                '3-2': [[0, 0], [-2, 0], [1, 0], [-2, -1], [1, 2]],
+                '3-0': [[0, 0], [1, 0], [-2, 0], [1, -2], [-2, 1]],
+                '0-3': [[0, 0], [-1, 0], [2, 0], [-1, 2], [2, -1]]
+            };
+            
+            this.currentPiece = null;
+            this.nextPiece = this.generateRandomPiece(); // Initialize the first 'next' piece
+
+            // Attack specific state variables
+            this.lastClearedWasTetrisOrTSpin = false; // For Back-to-Back bonus
+            this.consecutiveLineClears = 0; // For REN bonus
+            this.lastLockedPiece = null; // To store the piece that was just locked for T-Spin checks
+            this.lastLockedPieceWasRotated = false; // Flag for T-Spin rotation requirement
+
+            // Hold feature state
+            this.heldPiece = null;
+            this.canHold = true; // Player can hold at the start of a turn
+
+            // Default controls
+            this.controls = {
+                moveLeft: 'ArrowLeft',
+                moveRight: 'ArrowRight',
+                softDrop: 'ArrowDown',
+                hardDrop: 'ArrowUp',
+                rotate: ' ',
+                hold: 'v'
+            };
+
+            // キャラクター能力説明
+            this.characterAbilities = {
+                'char1': 'ヒールリンク：同時に複数ラインを消すとHPが多めに回復',
+                'char2': 'ダウンバリア：HP50%以下になるとダメージ20%カット',
+                'char3': 'チェインブースト：連続してラインを消すと攻撃力が徐々に上昇（リセット式）',
+                'default': '能力なし' // Default ability description
+            };
+
+            // Execute initialization
+            this.init();
+        }
+
+        /**
+         * @function initializeElements
+         * @description Initializes DOM element references for easier access.
+         */
+        initializeElements() {
+            this.elements = {
+                lobby: document.getElementById('lobby'),
+                gameArea: document.getElementById('gameArea'),
+                connectionStatus: document.getElementById('connectionStatus'),
+                playerNameInput: document.getElementById('playerName'),
+                roomIdInput: document.getElementById('roomId'),
+                joinBtn: document.querySelector('.lobby button'),
+                playerTitle: document.getElementById('playerTitle'),
+                playerCanvas: document.getElementById('playerCanvas'),
+                playerScore: document.getElementById('playerScore'),
+                playerLevel: document.getElementById('playerLevel'), 
+                playerStatus: document.getElementById('playerStatus'),
+                playerCharacterImg: document.getElementById('playerCharacterImg'),
+                nextPieceCanvas: document.getElementById('nextPieceCanvas'), 
+                holdPieceCanvas: document.getElementById('holdPieceCanvas'), 
+                opponentTitle: document.getElementById('opponentTitle'),
+                opponentCanvas: document.getElementById('opponentCanvas'),
+                opponentScore: document.getElementById('opponentScore'),
+                opponentLevel: document.getElementById('opponentLevel'), 
+                opponentStatus: document.getElementById('opponentStatus'),
+                opponentCharacterImg: document.getElementById('opponentCharacterImg'),
+                readyBtn: document.getElementById('readyBtn'),
+                gameOverOverlay: document.getElementById('gameOverOverlay'),
+                gameOverMessage: document.getElementById('gameOverMessage'),
+                playAgainBtn: document.getElementById('playAgainBtn'),
+                returnToHomeBtn: document.getElementById('returnToHomeBtn'),
+                countdownOverlay: document.getElementById('countdownOverlay'),
+                countdownNumber: document.getElementById('countdownNumber'),
+                settingsBtn: document.getElementById('settingsBtn'),
+                settingsModal: document.getElementById('settingsModal'),
+                saveSettingsBtn: document.getElementById('saveSettingsBtn'),
+                cancelSettingsBtn: document.getElementById('cancelSettingsBtn'),
+                settingsError: document.getElementById('settingsError'),
+                characterSelection: document.getElementById('characterSelection'), 
+                playerAbility: document.getElementById('playerAbility'),
+            };
+
+            // Safely get Canvas contexts
+            this.playerCtx = this.elements.playerCanvas ? this.elements.playerCanvas.getContext('2d') : null;
+            this.opponentCtx = this.elements.opponentCanvas ? this.elements.opponentCanvas.getContext('2d') : null;
+            this.nextPieceCtx = this.elements.nextPieceCanvas ? this.elements.nextPieceCanvas.getContext('2d') : null; 
+            this.holdPieceCtx = this.elements.holdPieceCanvas ? this.elements.holdPieceCanvas.getContext('2d') : null; 
+        }
+
+        /**
+         * @function init
+         * @description Sets up initial event listeners and WebSocket connection.
+         */
+        init() {
+            this.setupLobbyListeners();
+            this.setupSettingsModalListeners();
+            this.initWebSocket();
+            this.updateControlsDisplay(); // Initial update on load
+            this.elements.gameOverOverlay.style.display = 'none'; // Ensure hidden on init
+            this.elements.countdownOverlay.style.display = 'none'; // Ensure hidden on init
+            this.updateHpDisplay(); // Initial HP bar display
+            this.setupCharacterSelection(); // Setup character selection listeners
+            // Set initial player character image
+            if (this.elements.playerCharacterImg) {
+                this.elements.playerCharacterImg.src = this.characterImages[this.selectedCharacter] || this.characterImages['default'];
+            }
+            if (this.elements.playerAbility) {
+                this.elements.playerAbility.textContent = this.characterAbilities[this.selectedCharacter] || this.characterAbilities['default'];
+            }
+        }
+
+        /**
+         * @function createEmptyBoard
+         * @description Creates a new empty game board (2D array filled with zeros).
+         * @returns {Array<Array<number>>} An empty board array.
+         */
+        createEmptyBoard() {
+            return Array.from({ length: this.ROWS }, () => Array(this.COLS).fill(0));
+        }
+
+        /**
+         * @function setupLobbyListeners
+         * @description Attaches event listeners to lobby buttons and game over buttons.
+         */
+        setupLobbyListeners() {
+            if (this.elements.joinBtn) {
+                this.elements.joinBtn.onclick = () => this.joinRoom();
+            }
+            if (this.elements.readyBtn) {
+                this.elements.readyBtn.onclick = () => this.setReady();
+            }
+            if (this.elements.playAgainBtn) {
+                this.elements.playAgainBtn.onclick = () => this.playAgain();
+            }
+            if (this.elements.returnToHomeBtn) {
+                this.elements.returnToHomeBtn.onclick = () => this.returnToHome();
+            }
+        }
+
+        /**
+         * @function setupCharacterSelection
+         * @description Sets up event listeners for character selection.
+         */
+        setupCharacterSelection() {
+            if (this.elements.characterSelection) {
+                const characterOptions = this.elements.characterSelection.querySelectorAll('.character-option');
+                characterOptions.forEach(option => {
+                    option.addEventListener('click', () => {
+                        // Remove 'selected' class from all options
+                        characterOptions.forEach(opt => opt.classList.remove('selected'));
+                        // Add 'selected' class to the clicked option
+                        option.classList.add('selected');
+                        // Update selected character in game state
+                        this.selectedCharacter = option.dataset.character;
+                        // キャラクター画像も即座に切り替える
+                        if (this.elements.playerCharacterImg) {
+                            this.elements.playerCharacterImg.src = this.characterImages[this.selectedCharacter] || this.characterImages['default'];
+                        }
+                        // 能力説明も即座に切り替える
+                        if (this.elements.playerAbility) {
+                            this.elements.playerAbility.textContent = this.characterAbilities[this.selectedCharacter] || this.characterAbilities['default'];
+                        }
+                    });
+                });
+            }
+        }
+
+        /**
+         * @function setupSettingsModalListeners
+         * @description Attaches event listeners for the settings modal.
+         */
+        setupSettingsModalListeners() {
+            if (this.elements.settingsBtn) {
+                this.elements.settingsBtn.onclick = () => this.openSettingsModal();
+            }
+            if (this.elements.saveSettingsBtn) {
+                this.elements.saveSettingsBtn.onclick = () => this.saveSettings();
+            }
+            if (this.elements.cancelSettingsBtn) {
+                this.elements.cancelSettingsBtn.onclick = () => this.closeSettingsModal();
+            }
+
+            const keyInputs = document.querySelectorAll('.key-input');
+            keyInputs.forEach(input => {
+                input.onkeydown = (e) => {
+                    e.preventDefault();
+                    let key = e.key;
+                    if (key === ' ') key = 'Space'; // Display spacebar as "Space"
+                    input.value = key;
+                };
+            });
+        }
+
+        openSettingsModal() {
+            this.elements.settingsError.textContent = '';
+            // Load current controls into the modal inputs
+            for (const key in this.controls) {
+                const inputId = 'key' + key.charAt(0).toUpperCase() + key.slice(1);
+                const inputEl = document.getElementById(inputId);
+                if (inputEl) {
+                    let value = this.controls[key];
+                    if (value === ' ') value = 'Space';
+                    inputEl.value = value;
+                }
+            }
+            this.elements.settingsModal.style.display = 'flex';
+        }
+
+        closeSettingsModal() {
+            this.elements.settingsModal.style.display = 'none';
+        }
+
+        saveSettings() {
+            const newControls = {};
+            const controlKeys = Object.keys(this.controls);
+            const assignedKeys = new Set();
+            let hasError = false;
+
+            for (const key of controlKeys) {
+                const inputId = 'key' + key.charAt(0).toUpperCase() + key.slice(1);
+                const inputEl = document.getElementById(inputId);
+                let value = inputEl.value;
+                if (value === 'Space') value = ' '; // Convert "Space" back to a space character
+
+                if (assignedKeys.has(value)) {
+                    this.elements.settingsError.textContent = `エラー: キー「${value}」が複数の操作に割り当てられています。`;
+                    hasError = true;
+                    break;
+                }
+                assignedKeys.add(value);
+                newControls[key] = value;
+            }
+
+            if (!hasError) {
+                this.controls = newControls;
+                this.updateControlsDisplay();
+                this.closeSettingsModal();
+            }
+        }
+
+        /**
+         * @function initWebSocket
+         * @description Initializes the WebSocket connection to the game server.
+         */
+        initWebSocket() {
+            // Render.com deployed server URL (use wss:// for secure WebSocket)
+            const wsUrl = "wss://test-lgkt.onrender.com";  // Changed to wss for secure connection
+            
+            this.elements.connectionStatus.textContent = "サーバーに接続中...";
+            this.elements.connectionStatus.className = 'status waiting';
+
+            // Clear any existing reconnection timeout when initiating a new connection
+            if (this.reconnectTimeoutId) {
+                clearTimeout(this.reconnectTimeoutId);
+                this.reconnectTimeoutId = null;
+            }
+
+            // Close existing connection if any before creating a new one
+            if (this.ws && (this.ws.readyState === WebSocket.OPEN || this.ws.readyState === WebSocket.CONNECTING)) {
+                this.ws.close(); 
+            }
+            this.ws = new WebSocket(wsUrl);
+
+            this.ws.onopen = () => {
+                this.elements.connectionStatus.textContent = "サーバーに接続しました！";
+                this.elements.connectionStatus.className = 'status ready';
+                this.reconnectAttempts = 0; // Reset reconnect attempts on successful connection
+                // Connection successful, clear any pending reconnection attempts
+                if (this.reconnectTimeoutId) {
+                    clearTimeout(this.reconnectTimeoutId);
+                    this.reconnectTimeoutId = null;
+                }
+            };
+
+            this.ws.onmessage = (event) => {
+                const message = JSON.parse(event.data);
+                this.handleServerMessage(message);
+            };
+
+            this.ws.onclose = () => {
+                this.elements.connectionStatus.textContent = "サーバーとの接続が切れました。";
+                this.elements.connectionStatus.className = 'status loser';
+                // If the game was active and not explicitly ended by user action (returnToHome), try to reconnect
+                if (!this.gameEnded) { 
+                    this.attemptReconnect();
+                } else if (this.gameStarted) { // Game was active, but ended (e.g. by opponent leaving or game over)
+                    this.endGame("接続エラー: 相手が退出しました"); // Indicate opponent leaving if game was active
+                }
+            };
+            
+            this.ws.onerror = (error) => {
+                console.error("WebSocket Error:", error);
+                this.elements.connectionStatus.textContent = "接続エラーが発生しました。";
+                this.elements.connectionStatus.className = 'status loser';
+                if (!this.gameEnded) { // Only attempt reconnect if game is not explicitly ended
+                    this.attemptReconnect();
+                }
+            }
+        }
+
+        /**
+         * @function attemptReconnect
+         * @description Attempts to reconnect to the WebSocket server with exponential backoff.
+         */
+        attemptReconnect() {
+            if (this.reconnectTimeoutId) {
+                clearTimeout(this.reconnectTimeoutId);
+            }
+
+            this.reconnectAttempts++;
+            const delay = Math.min(this.reconnectInterval * Math.pow(2, this.reconnectAttempts - 1), this.maxReconnectInterval);
+            
+            this.elements.connectionStatus.textContent = `接続エラー。${(delay / 1000).toFixed(1)}秒後に再接続を試みます...`;
+            this.elements.connectionStatus.className = 'status waiting';
+
+            this.reconnectTimeoutId = setTimeout(() => {
+                this.initWebSocket(); // Call initWebSocket to re-establish connection
+            }, delay);
+        }
+
+        /**
+         * @function sendMessage
+         * @description Sends a message to the WebSocket server.
+         * @param {string} type - The type of message.
+         * @param {object} payload - The data payload for the message.
+         */
+        sendMessage(type, payload = {}) {
+            if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+                this.ws.send(JSON.stringify({ type, ...payload }));
+            } else {
+                console.warn("WebSocket not open. Message not sent:", type, payload);
+                this.elements.connectionStatus.textContent = "サーバーとの接続が失われています。";
+                this.elements.connectionStatus.className = 'status loser';
+            }
+        }
+        
+        /**
+         * @function handleServerMessage
+         * @description Handles incoming messages from the WebSocket server.
+         * @param {object} message - The parsed JSON message from the server.
+         */
+        handleServerMessage(message) {
+            console.log("Received: ", message);
+            // Overlays will be hidden/shown explicitly in relevant case blocks or functions.
+
+            switch (message.type) {
+                case 'joined':
+                    this.playerId = message.playerId; // Ensure playerId is set from server acknowledgement
+                    this.elements.playerTitle.textContent = this.playerId;
+                    this.elements.readyBtn.disabled = false;
+                    this.elements.gameOverOverlay.style.display = 'none'; // Ensure hidden when joining room
+                    this.elements.countdownOverlay.style.display = 'none'; // Ensure hidden when joining room
+                    this.updateHpDisplay(); // Initial HP display on join
+                    // Set player's character image
+                    if (this.elements.playerCharacterImg) {
+                        this.elements.playerCharacterImg.src = this.characterImages[this.selectedCharacter] || this.characterImages['default'];
+                    }
+                    if (message.room.playerCount > 1) {
+                        this.updateOpponentStatus(message.room.players.find(p => p.id !== this.playerId));
+                    }
+                    break;
+                case 'playerJoined':
+                    console.log("Player Joined Message, Character:", message.player.character); // Log opponent character
+                    this.updateOpponentStatus(message.player);
+                    break;
+                case 'playerReady':
+                    if (message.playerId !== this.playerId) {
+                        this.elements.opponentStatus.textContent = '準備完了';
+                        this.elements.opponentStatus.className = 'status ready';
+                    } else {
+                        // My own ready status acknowledgement from server or when I set ready.
+                        // Clarify current player's status for pending opponent.
+                        this.elements.playerStatus.textContent = '準備完了！相手を待っています...';
+                        this.elements.playerStatus.className = 'status ready';
+                    }
+                    this.elements.gameOverOverlay.style.display = 'none'; // Ensure hidden when a player becomes ready
+                    this.elements.countdownOverlay.style.display = 'none'; // Ensure hidden when a player becomes ready
+                    break;
+                case 'playerLeft':
+                    this.elements.opponentTitle.textContent = '相手';
+                    this.elements.opponentStatus.textContent = '相手が退出しました';
+                    this.elements.opponentStatus.className = 'status waiting';
+                    this.opponentBoard = this.createEmptyBoard(); // Clear opponent's board
+                    this.draw(); // Redraw to reflect changes
+                    // If game was active, end it due to opponent leaving
+                    if (this.gameStarted && !this.gameEnded) {
+                        this.endGame("相手が退出しました");
+                    }
+                    break;
+                case 'gameStart':
+                    // This is the only place where startBattle is called, ensuring server sync.
+                    this.startBattle(message.timestamp);
+                    break;
+                case 'opponentUpdate':
+                    console.log("Opponent Update Message, Character:", message.character); // Log opponent character
+                    this.updateOpponent(message);
+                    break;
+                case 'attack':
+                    // Server might not send attackType, so default it for visual feedback
+                    this.addAttackLines(message.lines, message.attackType || 'ATTACK');
+                    // HP情報も更新
+                    if (message.hp !== undefined) {
+                        this.opponentHp = Number(message.hp);
+                        this.updateHpDisplay();
+                    }
+                    break;
+                case 'gameEnd':
+                    this.endGame(message.winner === this.playerId ? 'あなたの勝利！' : 'あなたの負け...');
+                    if (message.winner === this.playerId) {
+                        this.elements.playerStatus.className = 'status winner';
+                        this.elements.opponentStatus.className = 'status loser';
+                    } else {
+                        this.elements.playerStatus.className = 'status loser';
+                        this.elements.opponentStatus.className = 'status winner';
+                    }
+                    break;
+                case 'error':
+                    // Use a custom modal or just update status for error messages
+                    this.elements.connectionStatus.textContent = `エラー: ${message.message}`;
+                    this.elements.connectionStatus.className = 'status loser';
+                    this.elements.lobby.style.display = 'block';
+                    this.elements.gameArea.style.display = 'none';
+                    this.elements.gameOverOverlay.style.display = 'none'; // Hide overlay on error
+                    this.elements.countdownOverlay.style.display = 'none'; // Hide countdown on error
+                    break;
+            }
+        }
+        
+        /**
+         * @function joinRoom
+         * @description Sends a request to join a room on the server.
+         */
+        joinRoom() {
+            this.playerId = this.elements.playerNameInput.value.trim();
+            this.roomId = this.elements.roomIdInput.value.trim();
+            
+            if(!this.playerId) {
+                // Use a custom modal or message box instead of alert()
+                this.elements.connectionStatus.textContent = "プレイヤー名を入力してください。";
+                this.elements.connectionStatus.className = 'status loser';
+                return;
+            }
+
+            this.elements.lobby.style.display = 'none';
+            this.elements.gameArea.style.display = 'flex'; // Show game area
+            this.elements.gameOverOverlay.style.display = 'none'; // Ensure overlay is hidden
+            this.elements.countdownOverlay.style.display = 'none'; // Ensure countdown is hidden
+            this.elements.readyBtn.style.display = 'block'; // Show ready button
+
+            // Set player's character image here as well, so it shows up when entering game area
+            if (this.elements.playerCharacterImg) {
+                const imageUrl = this.characterImages[this.selectedCharacter] || this.characterImages['default'];
+                this.elements.playerCharacterImg.src = imageUrl;
+                console.log("Setting player character image to:", imageUrl, "for character:", this.selectedCharacter); // Debug log
+            }
+
+            
+            this.updateControlsDisplay(); // Update controls text in the game view
+            // 能力説明も反映
+            if (this.elements.playerAbility) {
+                this.elements.playerAbility.textContent = this.characterAbilities[this.selectedCharacter] || this.characterAbilities['default'];
+            }
+            this.sendMessage('joinRoom', { playerId: this.playerId, roomId: this.roomId, character: this.selectedCharacter });
+            // バトル画面に入るとき能力説明を表示
+            if (this.elements.playerAbility) {
+                this.elements.playerAbility.style.display = 'block';
+                this.elements.playerAbility.textContent = this.characterAbilities[this.selectedCharacter] || this.characterAbilities['default'];
+            }
+        }
+        
+        /**
+         * @function setReady
+         * @description Notifies the server that the player is ready to start the game.
+         */
+        setReady() {
+            this.sendMessage('ready');
+            this.elements.readyBtn.disabled = true;
+            // Immediate local update for clarity, server will confirm.
+            this.elements.playerStatus.textContent = '準備完了！相手を待っています...';
+            this.elements.playerStatus.className = 'status ready';
+            // Also hide game over overlay here as a safety in case playAgain didn't hide it for some reason.
+            this.elements.gameOverOverlay.style.display = 'none';  
+            this.elements.countdownOverlay.style.display = 'none'; // Ensure countdown is also hidden
+        }
+
+        /**
+         * @function playAgain
+         * @description Handles "Play Again" button click, resets game state and signals readiness.
+         */
+        playAgain() {
+            // Hide game over screen immediately when "Play Again" is clicked
+            this.elements.gameOverOverlay.style.display = 'none';  
+            this.elements.countdownOverlay.style.display = 'none'; // Ensure countdown is also hidden
+
+            this.resetPlayerState(); // Reset player's board, score, etc.
+            this.elements.playerStatus.textContent = '待機中...'; // Reset to initial state before setting ready
+            this.elements.playerStatus.className = 'status waiting';
+            this.elements.opponentStatus.textContent = '待機中...';
+            this.elements.opponentStatus.className = 'status waiting';
+            this.elements.readyBtn.style.display = 'block'; // Show ready button again
+            this.elements.readyBtn.disabled = false; // Enable ready button
+            this.setReady(); // Signal readiness to the server, which will update status again.
+        }
+
+        /**
+         * @function returnToHome
+         * @description Handles "Return to Home" button click, shows lobby and resets game.
+         */
+        returnToHome() {
+            this.elements.gameOverOverlay.style.display = 'none'; // Hide game over screen
+            this.elements.countdownOverlay.style.display = 'none'; // Hide countdown overlay
+            this.elements.gameArea.style.display = 'none'; // Hide game area
+            this.elements.lobby.style.display = 'block'; // Show lobby
+
+            this.sendMessage('leaveRoom', { playerId: this.playerId, roomId: this.roomId }); // Notify server of leaving
+
+            // Clear any pending reconnection attempts when explicitly returning home
+            if (this.reconnectTimeoutId) {
+                clearTimeout(this.reconnectTimeoutId);
+                this.reconnectTimeoutId = null;
+            }
+            this.reconnectAttempts = 0; // Reset reconnection attempts when returning to home
+
+            // Reset lobby UI elements
+            this.elements.playerNameInput.value = this.playerId; // Keep player name
+            this.elements.roomIdInput.value = ''; // Clear room ID
+            this.elements.connectionStatus.textContent = "サーバーに接続中...";
+            this.elements.connectionStatus.className = 'status waiting';
+            this.elements.readyBtn.style.display = 'block'; // Ensure ready button is visible in lobby context
+            this.elements.readyBtn.disabled = true; // Disable until re-joined
+
+            // Reset player and opponent UI in game area (even if hidden)
+            this.elements.playerTitle.textContent = 'あなた';
+            this.elements.playerScore.textContent = '0';
+            this.elements.playerLevel.textContent = '1'; // Reset player level display
+            this.elements.playerStatus.textContent = '待機中...';
+            this.elements.playerStatus.className = 'status waiting';
+            this.elements.opponentTitle.textContent = '相手';
+            this.elements.opponentScore.textContent = '0';
+            this.elements.opponentLevel.textContent = '1'; // Reset opponent level display
+            this.elements.opponentStatus.textContent = '待機中...';
+            this.elements.opponentStatus.className = 'status waiting';
+            // Clear character images
+            if (this.elements.playerCharacterImg) {
+                this.elements.playerCharacterImg.src = '';
+            }
+            if (this.elements.opponentCharacterImg) {
+                this.elements.opponentCharacterImg.src = '';
+            }
+
+
+            this.gameEnded = true; // Ensure game logic is stopped
+            this.gameStarted = false;
+            if (this.animationFrameId) {
+                cancelAnimationFrame(this.animationFrameId);
+                this.animationFrameId = null;
+            }
+            document.onkeydown = null; // Disable controls
+
+            // Reinitialize WebSocket to get a fresh connection for the lobby
+            this.initWebSocket();
+
+            // ロビー画面に戻るとき能力説明を非表示
+            if (this.elements.playerAbility) {
+                this.elements.playerAbility.style.display = 'none';
+            }
+        }
+
+        /**
+         * @function updateOpponentStatus
+         * @description Updates the opponent's display information.
+         * @param {object} opponent - Opponent's player data.
+         */
+        updateOpponentStatus(opponent) {
+            if (opponent) {
+                this.elements.opponentTitle.textContent = opponent.id;
+                this.elements.opponentStatus.textContent = opponent.ready ? '準備完了' : '待機中';
+                this.elements.opponentStatus.className = opponent.ready ? 'status ready' : 'status waiting';
+                // 相手キャラ画像
+                if (this.elements.opponentCharacterImg) {
+                    this.elements.opponentCharacterImg.src = this.characterImages[opponent.character] || this.characterImages['default'];
+                    console.log(`Opponent character set to: ${opponent.character}, URL: ${this.elements.opponentCharacterImg.src}`);
+                }
+            } else {
+                 // If opponent is null, reset opponent display
+                this.elements.opponentTitle.textContent = '相手';
+                this.elements.opponentStatus.textContent = '待機中...';
+                this.elements.opponentStatus.className = 'status waiting';
+                if (this.elements.opponentCharacterImg) {
+                    this.elements.opponentCharacterImg.src = ''; // Clear opponent image
+                }
+            }
+        }
+        
+        /**
+         * @function updateOpponent
+         * @description Updates the opponent's game state (score, level, board).
+         * @param {object} data - Opponent's game data.
+         */
+        updateOpponent(data) {
+            this.elements.opponentScore.textContent = data.score;
+            this.elements.opponentLevel.textContent = data.level; // Update opponent's level display
+            this.opponentBoard = data.board;
+            this.opponentHp = Number(data.hp); // Ensure opponent HP is a number
+            // Update opponent's character image if provided
+            if (data.character && this.elements.opponentCharacterImg) {
+                this.elements.opponentCharacterImg.src = this.characterImages[data.character] || this.characterImages['default'];
+                console.log(`Opponent character set to (from updateOpponent): ${data.character}, URL: ${this.elements.opponentCharacterImg.src}`);
+            }
+            this.updateHpDisplay(); // Update HP bar display after opponent's HP changes
+            this.draw(); // Redraw opponent's board
+        }
+
+        /**
+         * @function startBattle
+         * @description Initiates the game battle, setting up controls and starting the game loop.
+         * @param {number} serverTime - Timestamp from server (unused directly in client loop for now).
+         */
+        startBattle(serverTime) {
+            this.gameStarted = true;
+            this.gameEnded = false;
+            
+            // Ensure any overlays are hidden right before starting the game
+            this.elements.gameOverOverlay.style.display = 'none';  
+            this.elements.countdownOverlay.style.display = 'flex'; // Show countdown overlay immediately
+
+            this.elements.playerStatus.textContent = 'バトル中！';
+            this.elements.playerStatus.className = 'status playing';
+            this.elements.opponentStatus.textContent = 'バトル中！';
+            this.elements.opponentStatus.className = 'status playing';
+            this.elements.readyBtn.style.display = 'none'; // Hide ready button
+
+            // Disable controls during countdown
+            document.onkeydown = null;
+
+            // Start countdown
+            let countdown = 3;
+            this.elements.countdownNumber.textContent = countdown;
+            this.elements.countdownNumber.style.animation = 'none'; // Reset animation
+            void this.elements.countdownNumber.offsetWidth; // Trigger reflow to restart animation
+            this.elements.countdownNumber.style.animation = 'pulseScale 1s infinite alternate'; // Restart animation
+
+
+            const countdownInterval = setInterval(() => {
+                countdown--;
+                if (countdown > 0) {
+                    this.elements.countdownNumber.textContent = countdown;
+                } else if (countdown === 0) {
+                    this.elements.countdownNumber.textContent = 'スタート！';
+                } else {
+                    clearInterval(countdownInterval);
+                    this.elements.countdownOverlay.style.display = 'none'; // Hide countdown overlay
+
+                    // Resume game logic after countdown
+                    this.setupGameControls();
+                    this.resetPlayerState(); // Reset player's board, score etc.
+                    this.newPiece(); // Spawn first piece
+                    
+                    this.dropTime = Date.now(); // Initialize drop timer
+                    this.gameLoop(); // Start game loop
+                }
+            }, 1000);
+            // バトル開始時にも能力説明を表示
+            if (this.elements.playerAbility) {
+                this.elements.playerAbility.style.display = 'block';
+                this.elements.playerAbility.textContent = this.characterAbilities[this.selectedCharacter] || this.characterAbilities['default'];
+            }
+        }
+
+        /**
+         * @function endGame
+         * @description Ends the current game, stops the loop, and displays end message.
+         * @param {string} message - Message to display at the end of the game.
+         */
+        endGame(message) {
+            if (this.gameEnded) return; // Prevent multiple end game calls
+            this.gameEnded = true;
+            this.gameStarted = false;
+            if (this.animationFrameId) {
+                cancelAnimationFrame(this.animationFrameId);
+                this.animationFrameId = null;
+            }
+            this.elements.playerStatus.textContent = message;
+            // Disable key controls
+            document.onkeydown = null;
+            
+            // Ensure countdown overlay is hidden if game ends while it's active
+            this.elements.countdownOverlay.style.display = 'none';
+
+            // Clear any pending reconnection attempts when game ends
+            if (this.reconnectTimeoutId) {
+                clearTimeout(this.reconnectTimeoutId);
+                this.reconnectTimeoutId = null;
+            }
+
+            // Show game over overlay
+            this.elements.gameOverMessage.textContent = message;
+            this.elements.gameOverOverlay.style.display = 'flex'; // Show the overlay
+        }
+
+        /**
+         * @function resetPlayerState
+         * @description Resets player-specific game variables to initial values.
+         */
+        resetPlayerState() {
+            this.board = this.createEmptyBoard();
+            this.score = 0;
+            this.level = 1;
+            this.lines = 0;
+            this.dropInterval = 1000;
+            this.lastClearedWasTetrisOrTSpin = false;
+            this.consecutiveLineClears = 0;
+            this.lastLockedPiece = null;
+            this.lastLockedPieceWasRotated = false;
+            this.heldPiece = null;
+            this.canHold = true;
+            this.currentHp = this.maxHp; // Reset HP
+            this.opponentHp = this.maxHp; // Reset opponent HP on player side
+
+            this.elements.playerScore.textContent = this.score;
+            this.elements.playerLevel.textContent = this.level; // Update player level display
+            this.updateHpDisplay(); // Update HP bar display on reset
+            this.draw();
+        }
+        
+        /**
+         * @function setupGameControls
+         * @description Sets up keyboard event listeners for game control.
+         */
+        setupGameControls() {
+            document.onkeydown = (e) => {
+                if (this.gameEnded || !this.currentPiece) return;
+
+                // Prevent default scrolling for all game keys
+                if (Object.values(this.controls).includes(e.key) || Object.values(this.controls).includes(e.key.toLowerCase())) {
+                    e.preventDefault();
+                }
+
+                // Using the controls object to map keys to actions
+                if (e.key === this.controls.moveLeft) {
+                    this.move(-1);
+                } else if (e.key === this.controls.moveRight) {
+                    this.move(1);
+                } else if (e.key === this.controls.softDrop) {
+                    this.drop();
+                } else if (e.key === this.controls.hardDrop) {
+                    this.hardDrop();
+                } else if (e.key === this.controls.rotate) {
+                    this.rotate();
+                } else if (e.key.toLowerCase() === this.controls.hold.toLowerCase()) { // Case-insensitive hold
+                    this.holdPiece();
+                }
+
+                this.draw(); // Redraw after each key press
+            }
+        }
+
+        /**
+         * @function updateControlsDisplay
+         * @description Updates the controls text in the UI based on current settings.
+         */
+        updateControlsDisplay() {
+            const controlsEl = document.querySelector('.controls');
+            if (controlsEl) {
+                const keyToDisplay = (key) => (key === ' ') ? 'Space' : key.toUpperCase();
+                controlsEl.textContent = 
+                    `${keyToDisplay(this.controls.moveLeft)}/${keyToDisplay(this.controls.moveRight)}/${keyToDisplay(this.controls.softDrop)}で移動 | ` +
+                    `${keyToDisplay(this.controls.hardDrop)}で瞬時落下 | ` +
+                        `${keyToDisplay(this.controls.rotate)}で回転 | ` +
+                    `${keyToDisplay(this.controls.hold)}でホールド`;
+            }
+        }
+
+        /**
+         * @function getGhostPiece
+         * @description Calculates the position of the ghost piece (prediction).
+         * @returns {object|null} The ghost piece object or null if no current piece.
+         */
+        getGhostPiece() {
+            if (!this.currentPiece) return null;
+            
+            const ghostPiece = {
+                shape: this.currentPiece.shape,
+                color: this.currentPiece.color,
+                x: this.currentPiece.x,
+                y: this.currentPiece.y
+            };
+            
+            while (this.isValid(ghostPiece)) {
+                ghostPiece.y++;
+            }
+            ghostPiece.y--; // Revert to the last valid position
+            
+            return ghostPiece;
+        }
+
+        /**
+         * @function gameLoop
+         * @description The main game loop responsible for updating game state and drawing.
+         * @param {DOMHighResTimeStamp} time - The timestamp provided by requestAnimationFrame.
+         */
+        gameLoop(time = 0) {
+            if (this.gameEnded) return;
+
+            // Automatic piece drop based on interval
+            if (Date.now() - this.dropTime > this.dropInterval) {
+                this.drop();
+            }
+
+            this.draw(); // Redraw the game board
+            this.animationFrameId = requestAnimationFrame(this.gameLoop.bind(this));
+        }
+
+        /**
+         * @function draw
+         * @description Draws both player's and opponent's game boards and pieces.
+         */
+        draw() {
+            // Draw player's board
+            if (this.playerCtx && this.elements.playerCanvas) {
+                this.playerCtx.clearRect(0, 0, this.elements.playerCanvas.width, this.elements.playerCanvas.height);
+                this.drawBoard(this.playerCtx, this.board);
+                
+                // Draw ghost piece (prediction)
+                const ghostPiece = this.getGhostPiece();
+                if (ghostPiece && this.currentPiece && ghostPiece.y !== this.currentPiece.y) {
+                    this.drawGhostPiece(this.playerCtx, ghostPiece);
+                }
+                
+                // Draw current piece
+                if (this.currentPiece) {
+                    this.drawPiece(this.playerCtx, this.currentPiece);
+                }
+            }
+            
+            // Draw opponent's board
+            if (this.opponentCtx && this.elements.opponentCanvas) {
+                this.opponentCtx.clearRect(0, 0, this.elements.opponentCanvas.width, this.elements.opponentCanvas.height);
+                this.drawBoard(this.opponentCtx, this.opponentBoard);
+            }
+
+            // Draw next piece
+            if (this.nextPieceCtx && this.elements.nextPieceCanvas) {
+                this.nextPieceCtx.clearRect(0, 0, this.elements.nextPieceCanvas.width, this.elements.nextPieceCanvas.height);
+                this.nextPieceCtx.strokeStyle = '#333';
+                this.nextPieceCtx.lineWidth = 2;
+                this.nextPieceCtx.strokeRect(0, 0, this.elements.nextPieceCanvas.width, this.elements.nextPieceCanvas.height);
+                this.drawNextPiece(this.nextPieceCtx, this.nextPiece);
+            }
+
+            // Draw held piece
+            if (this.holdPieceCtx && this.elements.holdPieceCanvas) {
+                this.holdPieceCtx.clearRect(0, 0, this.elements.holdPieceCanvas.width, this.elements.holdPieceCanvas.height);
+                this.holdPieceCtx.strokeStyle = '#333';
+                this.holdPieceCtx.lineWidth = 2;
+                this.holdPieceCtx.strokeRect(0, 0, this.elements.holdPieceCanvas.width, this.elements.holdPieceCanvas.height);
+                if (this.heldPiece) {
+                    this.drawNextPiece(this.holdPieceCtx, this.heldPiece); // Re-use the same drawing logic
+                }
+            }
+        }
+
+        /**
+         * @function drawBoard
+         * @description Draws the given board state onto the canvas.
+         * @param {CanvasRenderingContext2D} ctx - The canvas rendering context.
+         * @param {Array<Array<number|string>>} board - The game board to draw.
+         */
+        drawBoard(ctx, board) {
+            if (!ctx) return;
+
+            // Explicitly draw the black background for the entire board area
+            ctx.fillStyle = '#000'; // Black background
+            ctx.fillRect(0, 0, this.COLS * this.BLOCK_SIZE, this.ROWS * this.BLOCK_SIZE);
+
+            board.forEach((row, y) => {
+                row.forEach((value, x) => {
+                    if (value !== 0) { // If it's not an empty cell
+                        ctx.fillStyle = typeof value === "string" ? value : "#00f0f0"; // Use stored color or default
+                        ctx.fillRect(x * this.BLOCK_SIZE, y * this.BLOCK_SIZE, this.BLOCK_SIZE, this.BLOCK_SIZE);
+                        // Draw block border for better visibility
+                        ctx.strokeStyle = '#222';
+                        ctx.lineWidth = 1;
+                        ctx.strokeRect(x * this.BLOCK_SIZE, y * this.BLOCK_SIZE, this.BLOCK_SIZE, this.BLOCK_SIZE);
+                    }
+                });
+            });
+        }
+
+        /**
+         * @function drawPiece
+         * @description Draws a given tetromino piece on the canvas.
+         * @param {CanvasRenderingContext2D} ctx - The canvas rendering context.
+         * @param {object} piece - The piece object to draw.
+         */
+        drawPiece(ctx, piece) {
+            if (!ctx) return;
+            ctx.fillStyle = piece.color;
+            piece.shape.forEach((row, y) => {
+                row.forEach((value, x) => {
+                    if (value > 0) {
+                        ctx.fillRect((piece.x + x) * this.BLOCK_SIZE, (piece.y + y) * this.BLOCK_SIZE, this.BLOCK_SIZE, this.BLOCK_SIZE);
+                        ctx.strokeStyle = '#222';
+                        ctx.lineWidth = 1;
+                        ctx.strokeRect((piece.x + x) * this.BLOCK_SIZE, (piece.y + y) * this.BLOCK_SIZE, this.BLOCK_SIZE, this.BLOCK_SIZE);
+                    }
+                });
+            });
+        }
+
+        /**
+         * @function drawGhostPiece
+         * @description Draws the ghost piece as a translucent outline.
+         * @param {CanvasRenderingContext2D} ctx - The canvas rendering context.
+         * @param {object} piece - The ghost piece object to draw.
+         */
+        drawGhostPiece(ctx, piece) {
+            if (!ctx) return;
+            ctx.save();
+            ctx.globalAlpha = 0.5; // 半透明度を0.3から0.5に増加して、より濃くする
+            ctx.strokeStyle = piece.color; // Use piece color for outline
+            ctx.lineWidth = 2; // Thicker line for ghost
+            ctx.setLineDash([4, 4]); // Dashed line
+
+            piece.shape.forEach((row, y) => {
+                row.forEach((value, x) => {
+                    if (value > 0) {
+                        ctx.strokeRect((piece.x + x) * this.BLOCK_SIZE, (piece.y + y) * this.BLOCK_SIZE, this.BLOCK_SIZE, this.BLOCK_SIZE);
+                    }
+                });
+            });
+            ctx.restore();
+        }
+
+        /**
+         * @function drawNextPiece
+         * @description Draws the next tetromino piece on its dedicated canvas.
+         * @param {CanvasRenderingContext2D} ctx - The next piece canvas rendering context.
+         * @param {object} piece - The next piece object to draw.
+         */
+        drawNextPiece(ctx, piece) {
+            if (!ctx || !piece) return;
+            ctx.fillStyle = piece.color;
+            
+            const pieceWidthBlocks = piece.shape[0].length;
+            const pieceHeightBlocks = piece.shape.length;
+
+            // Use the actual canvas dimensions for centering
+            const canvasWidth = ctx.canvas.width;
+            const canvasHeight = ctx.canvas.height;
+
+            // Calculate offset to center the piece in the canvas
+            const offsetX = (canvasWidth / 2) - (pieceWidthBlocks * this.BLOCK_SIZE / 2);
+            const offsetY = (canvasHeight / 2) - (pieceHeightBlocks * this.BLOCK_SIZE / 2);
+
+            piece.shape.forEach((row, y) => {
+                row.forEach((value, x) => {
+                    if (value > 0) {
+                        ctx.fillRect(offsetX + x * this.BLOCK_SIZE, offsetY + y * this.BLOCK_SIZE, this.BLOCK_SIZE, this.BLOCK_SIZE);
+                        ctx.strokeStyle = '#222';
+                        ctx.lineWidth = 1;
+                        ctx.strokeRect(offsetX + x * this.BLOCK_SIZE, offsetY + y * this.BLOCK_SIZE, this.BLOCK_SIZE, this.BLOCK_SIZE);
+                    }
+                });
+            });
+        }
+
+
+        /**
+         * @function generateRandomPiece
+         * @description Generates a single random tetromino piece object.
+         * @returns {object} A new piece object.
+         */
+        generateRandomPiece() {
+            const randomIndex = Math.floor(Math.random() * this.pieces.length);
+            const pieceDef = this.pieces[randomIndex];
+            return {
+                shape: JSON.parse(JSON.stringify(pieceDef.s)), // Deep copy shape
+                color: pieceDef.c,
+                x: Math.floor(this.COLS / 2) - Math.floor(pieceDef.s[0].length / 2),
+                y: 0,
+                originalPieceIndex: randomIndex,
+                rotationState: 0,
+                wasRotatedBeforeLock: false
+            };
+        }
+
+        /**
+         * @function newPiece
+         * @description Spawns a new random tetromino piece. Ends game if new piece cannot be placed.
+         */
+        newPiece() {
+            // The piece that was previously 'next' now becomes 'current'
+            this.currentPiece = this.nextPiece;
+            // Generate a brand new piece for the 'next' slot
+            this.nextPiece = this.generateRandomPiece();
+
+            // Reset current piece's rotation flag for T-Spin detection
+            if (this.currentPiece) {
+                this.currentPiece.wasRotatedBeforeLock = false;
+            }
+
+            // Check if the newly assigned current piece can be placed
+            if (!this.isValid(this.currentPiece)) {
+                this.endGame("ゲームオーバー");
+                this.sendMessage('gameOver');
+            }
+        }
+
+        /**
+         * @function move
+         * @description Moves the current piece horizontally.
+         * @param {number} dir - Direction of movement (-1 for left, 1 for right).
+         */
+        move(dir) {
+            if (!this.currentPiece) return;
+            const originalX = this.currentPiece.x;
+            this.currentPiece.x += dir;
+            if (!this.isValid(this.currentPiece)) {
+                this.currentPiece.x = originalX; // Revert if invalid
+            }
+        }
+
+        /**
+         * @function rotate
+         * @description Rotates the current piece 90 degrees clockwise, applying SRS wall kicks.
+         */
+        rotate() {
+            if (!this.currentPiece || this.currentPiece.originalPieceIndex === 1) return; // O-piece doesn't rotate
+
+            const originalShape = this.currentPiece.shape;
+            const originalX = this.currentPiece.x;
+            const originalY = this.currentPiece.y;
+            const originalRotationState = this.currentPiece.rotationState;
+
+            // Rotate piece matrix
+            const newShape = originalShape[0].map((_, colIndex) => originalShape.map(row => row[colIndex]).reverse());
+            this.currentPiece.shape = newShape;
+
+            const newRotationState = (originalRotationState + 1) % 4;
+            this.currentPiece.rotationState = newRotationState;
+
+            const kickData = (this.currentPiece.originalPieceIndex === 0) ? this.srsIKicks : this.srsKicks;
+            const kickKey = `${originalRotationState}-${newRotationState}`;
+            const kicks = kickData[kickKey] || [[0, 0]];
+
+            for (const kick of kicks) {
+                this.currentPiece.x = originalX + kick[0];
+                this.currentPiece.y = originalY - kick[1]; // SRS data has inverted Y
+
+                if (this.isValid(this.currentPiece)) {
+                    // If rotation was successful, set the flag for T-Spin detection
+                    if (this.currentPiece.originalPieceIndex === 2) { // T-mino is index 2
+                        this.currentPiece.wasRotatedBeforeLock = true;
+                    }
+                    this.draw(); // Redraw to show the successful rotation
+                    return; // Kick successful, exit function
+                }
+            }
+
+            // If no kicks were successful, revert everything
+            this.currentPiece.shape = originalShape;
+            this.currentPiece.x = originalX;
+            this.currentPiece.y = originalY;
+            this.currentPiece.rotationState = originalRotationState;
+        }
+
+        /**
+         * @function drop
+         * @description Drops the current piece by one row. Locks the piece if it hits an obstacle.
+         */
+        drop() {
+            if (!this.currentPiece) return;
+            const originalY = this.currentPiece.y; // For soft drop scoring
+            this.currentPiece.y++;
+            if (!this.isValid(this.currentPiece)) {
+                this.currentPiece.y--; // Revert to last valid position
+                this.lockPiece(); // Lock the piece
+                this.newPiece(); // Spawn new piece
+            } else {
+                // Add soft drop score (1 point per cell dropped)
+                this.score += 1;
+                this.elements.playerScore.textContent = this.score;
+            }
+            this.dropTime = Date.now(); // Reset drop timer
+        }
+
+        /**
+         * @function hardDrop
+         * @description Instantly drops the current piece to the lowest possible position.
+         */
+        hardDrop() {
+            if (!this.currentPiece) return;
+            const originalY = this.currentPiece.y;
+            while (this.isValid(this.currentPiece)) {
+                this.currentPiece.y++;
+            }
+            this.currentPiece.y--; // Revert to last valid position
+            const cellsDropped = this.currentPiece.y - originalY;
+            this.score += cellsDropped * 2; // Hard drop score (2 points per cell dropped)
+            this.elements.playerScore.textContent = this.score;
+
+            this.lockPiece(); // Lock the piece
+            this.newPiece(); // Spawn new piece
+            this.dropTime = Date.now(); // Reset drop timer immediately after hard drop
+        }
+
+        /**
+         * @function isValid
+         * @description Checks if a piece's current position and shape are valid on the board.
+         * @param {object} piece - The piece object to check.
+         * @returns {boolean} True if valid, false otherwise.
+         */
+        isValid(piece) {
+            if (!piece) return false;
+            for (let y = 0; y < piece.shape.length; y++) {
+                for (let x = 0; x < piece.shape[y].length; x++) {
+                    if (piece.shape[y][x] > 0) { // If it's a block of the piece
+                        let newX = piece.x + x;
+                        let newY = piece.y + y;
+                        // Check boundaries and collision with existing blocks
+                        if (newX < 0 || newX >= this.COLS || newY >= this.ROWS || (newY >= 0 && this.board[newY] && this.board[newY][newX] !== 0)) {
+                            return false;
+                        }
+                    }
+                }
+            }
+            return true;
+        }
+
+        /**
+         * @function holdPiece
+         * @description Swaps the current piece with the held piece.
+         */
+        holdPiece() {
+            if (!this.canHold) return;
+
+            if (this.heldPiece) {
+                // Swap current and held piece
+                const temp = this.currentPiece;
+                this.currentPiece = this.heldPiece;
+                this.heldPiece = temp;
+
+                // Reset the position and rotation of the new current piece
+                this.currentPiece.x = Math.floor(this.COLS / 2) - Math.floor(this.currentPiece.shape[0].length / 2);
+                this.currentPiece.y = 0;
+                this.currentPiece.rotationState = 0; // Reset rotation
+
+            } else {
+                // If no piece is held, the current piece goes to hold and a new piece becomes current
+                this.heldPiece = this.currentPiece;
+                this.newPiece(); // This will grab the nextPiece and generate a new nextPiece
+            }
+
+            // Reset the held piece's rotation for consistency when it's used next
+            this.heldPiece.rotationState = 0;
+            this.heldPiece.wasRotatedBeforeLock = false;
+
+            this.canHold = false; // Prevent holding again until a piece is locked
+            this.draw(); // Redraw the board immediately
+        }
+
+        /**
+         * @function lockPiece
+         * @description Locks the current piece onto the board and triggers line clearing.
+         */
+        lockPiece() {
+            if (!this.currentPiece) return;
+            
+            // Store the currentPiece's state BEFORE it's locked and cleared.
+            // This is crucial for T-Spin detection which relies on the piece's state *before* it becomes part of the board.
+            this.lastLockedPiece = {
+                shape: JSON.parse(JSON.stringify(this.currentPiece.shape)),
+                color: this.currentPiece.color,
+                x: this.currentPiece.x,
+                y: this.currentPiece.y,
+                originalPieceIndex: this.currentPiece.originalPieceIndex,
+                rotationState: this.currentPiece.rotationState,
+                wasRotatedBeforeLock: this.currentPiece.wasRotatedBeforeLock // Persist this flag
+            };
+            this.lastLockedPieceWasRotated = this.currentPiece.wasRotatedBeforeLock;
+
+            // Merge the current piece into the board
+            this.currentPiece.shape.forEach((row, y) => {
+                row.forEach((value, x) => {
+                    if (value > 0) { // If it's a block of the piece
+                        // Ensure bounds check for safety, though isValid should prevent this
+                        if (this.currentPiece.y + y < this.ROWS && this.currentPiece.x + x < this.COLS && this.currentPiece.x + x >= 0) {
+                            this.board[this.currentPiece.y + y][this.currentPiece.x + x] = this.currentPiece.color;
+                        }
+                    }
+                });
+            });
+            
+            this.clearLines(); // Check for and clear completed lines
+
+            this.canHold = true; // Allow holding again after a piece is locked
+
+            // Send board update to opponent
+            this.sendMessage('boardUpdate', {
+                board: this.board,
+                score: this.score,
+                level: this.level,
+                hp: this.currentHp // Send current HP
+            });
+
+            // Reset the rotation flag for the *next* piece (important for T-spin detection)
+            // This flag pertains to the piece that *was just locked*.
+            // The current piece will be replaced by the next piece, so this flag needs to be cleared for the piece
+            // that is about to become `this.currentPiece`. This is handled in newPiece.
+        }
+        
+        /**
+         * @function clearLines
+         * @description Clears full lines, calculates score, level, and attack lines.
+         */
+        clearLines() {
+            let clearedLinesCount = 0;
+            // Iterate from bottom up to clear lines
+            outer: for (let y = this.ROWS - 1; y >= 0; y--) {
+                for (let x = 0; x < this.COLS; x++) {
+                    if (this.board[y][x] === 0) {
+                        continue outer; // Not a full line, move to next row
+                    }
+                }
+                // Line is full: remove it and add a new empty row at the top
+                const row = this.board.splice(y, 1)[0].fill(0); // Remove row and fill with zeros
+                this.board.unshift(row); // Add new row to the top
+                y++; // Re-check the current row index as the board has shifted down
+                clearedLinesCount++;
+            }
+
+            let totalAttackLines = 0;
+            let attackTypeDescription = [];
+            let currentIsB2BCandidate = false; // True if current clear is a Tetris or T-Spin
+
+            // Step 1: Calculate base attack lines and identify T-Spin/Tetris
+            if (clearedLinesCount > 0) {
+                this.consecutiveLineClears++; // Increment combo counter
+
+                // --- char1: ヒールリンク ---
+                if (this.selectedCharacter === 'char1' && clearedLinesCount >= 2) {
+                    // 消したライン数分HP回復（最大HPを超えない）
+                    this.currentHp = Math.min(this.maxHp, this.currentHp + clearedLinesCount);
+                    this.updateHpDisplay();
+                }
+
+                // Base score for lines cleared (common Tetris scoring)
+                // 1 line: 100, 2 lines: 300, 3 lines: 500, 4 lines: 800
+                this.score += [0, 100, 300, 500, 800][clearedLinesCount] * this.level;  
+
+                let tSpinDetails = { isTSpin: false };
+                // Check for T-Spin only if the last piece was a T-mino and was rotated
+                if (this.lastLockedPiece && this.lastLockedPiece.originalPieceIndex === 2 && this.lastLockedPieceWasRotated) {
+                    tSpinDetails = this.calculateTSpinDetails(this.lastLockedPiece, clearedLinesCount);
+                }
+
+                if (tSpinDetails.isTSpin) {
+                    totalAttackLines += tSpinDetails.attackLines;
+                    attackTypeDescription.push(tSpinDetails.type);
+                    currentIsB2BCandidate = true; // T-Spin is a B2B candidate
+                } else if (clearedLinesCount === 1) {
+                    attackTypeDescription.push('Single');
+                    totalAttackLines += 1; // Single sends 1 line（通常攻撃）
+                } else if (clearedLinesCount === 2) {
+                    attackTypeDescription.push('Double');
+                    totalAttackLines += 1; // Double sends 1 line
+                } else if (clearedLinesCount === 3) {
+                    attackTypeDescription.push('Triple');
+                    totalAttackLines += 2; // Triple sends 2 lines
+                } else if (clearedLinesCount === 4) {
+                    attackTypeDescription.push('Tetris');
+                    totalAttackLines += 4; // Tetris sends 4 lines
+                    currentIsB2BCandidate = true; // Tetris is a B2B candidate
+                }
+            } else {
+                this.consecutiveLineClears = 0; // Reset combo if no lines cleared
+            }
+
+            // Step 2: Add REN bonus (Combo)
+            // REN bonus starts from 2nd consecutive clear (combo = 2)
+            if (this.consecutiveLineClears > 1) {
+                let renBonus = this.getRenBonus(this.consecutiveLineClears);
+                // --- char3: チェインブースト ---
+                if (this.selectedCharacter === 'char3') {
+                    renBonus = Math.ceil(renBonus * 1.5); // 攻撃力1.5倍（小数切り上げ）
+                }
+                totalAttackLines += renBonus;
+                attackTypeDescription.push(`${this.consecutiveLineClears}REN`); // 日本語表示用に調整
+            }
+
+            // Step 3: Add Back-to-Back bonus
+            // B2B applies if previous clear was Tetris/T-Spin AND current clear is also Tetris/T-Spin
+            if (this.lastClearedWasTetrisOrTSpin && currentIsB2BCandidate) {
+                totalAttackLines += 1; // Back-to-Back bonus
+                attackTypeDescription.push('Back-to-Back'); // 日本語表示用に調整
+            }
+            // Update B2B state for the next clear.
+            // B2B state persists even if no lines are cleared, but resets if a non-B2B candidate clear happens.
+            if (clearedLinesCount > 0) { // Only update B2B state if a line clear actually happened
+                this.lastClearedWasTetrisOrTSpin = currentIsB2BCandidate;
+            }
+
+
+            // Step 4: Check for All Clear (Perfect Clear)
+            if (this.isBoardEmpty()) {
+                totalAttackLines += 5; // All Clear bonus
+                attackTypeDescription.push('All Clear'); // 日本語表示用に調整
+            }
+
+            // Character Ability: Char2 (Guard Charge) - Recover HP on 2+ line clear
+            if (this.selectedCharacter === 'char2' && clearedLinesCount >= 2) {
+                if (this.currentHp < this.maxHp) {
+                    this.currentHp = Math.min(this.maxHp, this.currentHp + 1); // Recover 1 HP, not exceeding max
+                    console.log("Char2 ability: Guard Charge activated! HP recovered to " + this.currentHp);
+                    this.updateHpDisplay(); // Update HP bar immediately
+                }
+            }
+
+            // Update player's general game stats (lines, level, speed)
+            this.lines += clearedLinesCount;
+            const newLevel = Math.floor(this.lines / 10) + 1; // Level up every 10 lines
+            if (newLevel !== this.level) {
+                this.level = newLevel;
+                this.elements.playerLevel.textContent = this.level; // Update player level display
+            }
+            this.dropInterval = Math.max(200, 1000 - (this.level - 1) * 50); // Faster drop with higher level
+
+            this.elements.playerScore.textContent = this.score;
+
+            // Send attack lines to opponent if any
+            if (totalAttackLines > 0) {
+                this.sendMessage('linesCleared', {  
+                    lines: totalAttackLines,
+                    // Send a descriptive text for the attack type
+                    attackType: attackTypeDescription.length > 0 ? attackTypeDescription.join(' ') : 'ラインクリア', // 日本語表示用にスペース区切り
+                    hp: this.currentHp // HP情報を追加
+                });
+                // Display sent attack indicator for the player
+                this.displayAttackIndicator(totalAttackLines, attackTypeDescription.join(' '), true); // 日本語表示用にスペース区切り
+                // ローカルでの相手HP更新を削除 - サーバーからの更新に依存
+            }
+        }
+        
+        /**
+         * @function addAttackLines
+         * @description Adds incoming garbage lines to the player's board.
+         * @param {number} count - The number of garbage lines to add.
+         * @param {string} attackType - The type of attack (e.g., 'Tetris', 'ATTACK').
+         */
+        addAttackLines(count, attackType = 'ATTACK') {
+            if (this.gameEnded) return;
+
+            let actualDamage = count;
+            // Character Ability: Char1 (Down Barrier) - Damage reduction
+            if (this.selectedCharacter === 'char1') {
+                if (this.currentHp <= this.maxHp * 0.5) { // HP 50% or less
+                    actualDamage = Math.ceil(count * 0.8); // 20% damage cut, round up to ensure at least 1 damage
+                    console.log(`Char1 ability: Down Barrier activated! Incoming damage: ${count}, Reduced to: ${actualDamage}`);
+                }
+            }
+            
+            // Character Ability: Char3 (Last Stand) - Negate lethal damage once at 1 HP
+            if (this.selectedCharacter === 'char3') {
+                if (this.currentHp === 1 && actualDamage >= 1) { // If HP is 1 and lethal damage incoming
+                    // Check if this is the first time Last Stand is used
+                    if (!this.lastStandUsed) {
+                        this.lastStandUsed = true; // Mark as used
+                        actualDamage = 0; // Negate all incoming damage
+                        console.log("Char3 ability: Last Stand activated! Lethal damage negated once.");
+                    } else {
+                        console.log("Char3 ability: Last Stand already used. Taking damage normally.");
+                    }
+                }
+            }
+
+
+            // Reduce player's HP by the number of incoming lines (after reduction)
+            this.currentHp = Math.max(0, this.currentHp - actualDamage);
+            this.updateHpDisplay(); // Update HP bar
+
+            // If HP drops to 0 or below, trigger game over
+            if (this.currentHp <= 0) {
+                this.endGame("ゲームオーバー");
+                this.sendMessage('gameOver'); // Notify server of game over
+                return; // Stop adding lines and end game
+            }
+
+            // Shift existing rows up and add new grey rows at the bottom
+            for (let i = 0; i < count; i++) {
+                // If the top row is already occupied, adding new lines might mean game over (but HP check handles this first)
+                if (this.board[0].some(cell => cell !== 0)) {
+                    // This scenario should now be largely covered by HP check, but keeping for robustness
+                    console.warn("Board full, but HP check should have ended game.");
+                }
+                this.board.shift(); // Remove the top row
+                const newRow = Array(this.COLS).fill('#808080'); // Attack lines are grey
+                // Create a random "hole" in the attack line
+                const hole = Math.floor(Math.random() * this.COLS);
+                newRow[hole] = 0;
+                this.board.push(newRow); // Add the new attack row to the bottom
+            }
+
+            // Display visual indicator for received attack
+            // 相手からの攻撃なので、attackTypeはそのまま、または「攻撃」として表示
+            this.displayAttackIndicator(count, `おじゃまブロック`, false);  
+        }
+
+        /**
+         * @function updateHpDisplay
+         * @description Updates the width of the HP bar fill elements based on current HP.
+         */
+        updateHpDisplay() {
+            // HPバー表示処理を無効化
+        }
+
+
+        /**
+         * @function isCellOccupied
+         * @description Checks if a specific cell on the board (or boundary) is occupied.
+         * @param {number} x - X coordinate of the cell.
+         * @param {number} y - Y coordinate of the cell.
+         * @returns {boolean} True if occupied, false otherwise.
+         */
+        isCellOccupied(x, y) {
+            // Check boundaries (walls and floor)
+            if (x < 0 || x >= this.COLS || y >= this.ROWS) {
+                return true;  
+            }
+            // Check if within board and occupied by an existing block
+            // Ensure board[y] exists before accessing board[y][x]
+            return this.board[y] && this.board[y][x] !== 0;  
+        }
+
+        /**
+         * @function calculateTSpinDetails
+         * @description Determines if a T-Spin occurred and its type, returning attack lines.
+         * This function assumes `lockedPiece` is a T-mino and `wasRotatedBeforeLock` is true.
+         * Note: This is a simplified T-Spin detection. A full SRS T-Spin implementation is more complex,
+         * involving checking specific mini-T-spin setups and how many of the 4 surrounding "corner" blocks
+         * are occupied, particularly distinguishing between "flat" and "point" corners.
+         * @param {object} lockedPiece - The piece object that was just locked.
+         * @param {number} clearedLinesCount - Number of lines cleared by this lock.
+         * @returns {object} { isTSpin: boolean, type: string|null, attackLines: number }
+         */
+        calculateTSpinDetails(lockedPiece, clearedLinesCount) {
+            let result = { isTSpin: false, type: null, attackLines: 0 };
+
+            // These are the 4 "corner" cells of the 3x3 bounding box around a T-mino.
+            // Occupancy of these cells after the T-mino lands determines if it's a T-Spin.
+            const boundingBoxCorners = [
+                { dx: 0, dy: 0 }, // Top-Left (relative to piece's 3x3 top-left)
+                { dx: 2, dy: 0 }, // Top-Right
+                { dx: 0, dy: 2 }, // Bottom-Left
+                { dx: 2, dy: 2 }  // Bottom-Right
+            ];
+
+            let occupiedCornerCount = 0;
+            // Count how many of these bounding box corners are occupied by blocks or walls/floor
+            boundingBoxCorners.forEach(p => {
+                const checkX = lockedPiece.x + p.dx;
+                const checkY = lockedPiece.y + p.dy;
+                // Use the new isCellOccupied helper which correctly handles boundaries
+                if (this.isCellOccupied(checkX, checkY)) {
+                    occupiedCornerCount++;
+                }
+            });
+
+            // A T-Spin is detected if the piece was rotated before lock, it's a T-mino,
+            // and 3 or 4 corners of its 3x3 bounding box are occupied.
+            // Simplified check based on 3+ corners
+            if (occupiedCornerCount >= 3) {
+                result.isTSpin = true;
+
+                // Determine T-Spin type and corresponding attack lines
+                // Based on user's definitions (common Tetris Attack values):
+                // T-Spin Mini: 0 lines attack (1 line cleared)
+                // T-Spin Single: 2 lines attack (1 line cleared, but 4 corners filled)
+                // T-Spin Double: 4 lines attack (2 cleared lines)
+                // T-Spin Triple: 6 lines attack (3 cleared lines)
+
+                if (clearedLinesCount === 1) {
+                    // Distinction between T-Spin Mini (3 corners) and T-Spin Single (4 corners)
+                    if (occupiedCornerCount === 3) { // Simplified T-Spin Mini check
+                        result.type = 'T-Spin Mini';
+                        result.attackLines = 0;  
+                    } else { // (occupiedCornerCount === 4) implies a full T-Spin Single
+                        result.type = 'T-Spin Single';
+                        result.attackLines = 2;  
+                    }
+                } else if (clearedLinesCount === 2) {
+                    result.type = 'T-Spin Double';
+                    result.attackLines = 4;
+                } else if (clearedLinesCount === 3) {
+                    result.type = 'T-Spin Triple';
+                    result.attackLines = 6;
+                }
+            }
+            return result;
+        }
+
+
+        /**
+         * @function isBoardEmpty
+         * @description Checks if the entire game board is empty (for All Clear bonus).
+         * @returns {boolean} True if board is empty, false otherwise.
+         */
+        isBoardEmpty() {
+            for (let y = 0; y < this.ROWS; y++) {
+                for (let x = 0; x < this.COLS; x++) {
+                    if (this.board[y][x] !== 0) {
+                        return false;
+                    }
+                }
+            }
+            return true;
+        }
+
+        /**
+         * @function getRenBonus
+         * @description Calculates the bonus lines for consecutive line clears (REN).
+         * @param {number} consecutiveClears - The number of consecutive line clears.
+         * @returns {number} The bonus lines to send.
+         */
+        getRenBonus(consecutiveClears) {
+            if (consecutiveClears <= 0) return 0;
+            if (consecutiveClears <= 2) return 1; // 1-2 REN -> +1
+            if (consecutiveClears <= 4) return 2; // 3-4 REN -> +2
+            if (consecutiveClears <= 6) return 3; // 5-6 REN -> +3
+            if (consecutiveClears <= 9) return 5; // 7-9 REN -> +5
+            return 6; // 10+ REN -> +6
+        }
+
+        /**
+         * @function displayAttackIndicator
+         * @description Displays a temporary visual indicator for attacks sent or received.
+         * @param {number} lines - Number of lines involved in the attack.
+         * @param {string} type - Description of the attack type (e.g., "Tetris", "T-Spin Double").
+         * @param {boolean} isSent - True if the attack was sent by this player, false if received.
+         */
+        displayAttackIndicator(lines, type, isSent) {
+            const indicator = document.createElement('div');
+            indicator.textContent = `${isSent ? '攻撃！' : ''}${type} +${lines} Lines`;
+            indicator.className = isSent ? 'attack-sent-indicator' : 'attack-indicator';
+
+            // Append to the container or game area for central display
+            this.elements.gameArea.appendChild(indicator);
+
+            // Remove after animation
+            indicator.addEventListener('animationend', () => {
+                indicator.remove();
+            });
+        }
+    }
+
+    // Global game instance to be accessible from inline HTML event handlers
+    let gameInstance;
+
+    // Global functions called from HTML buttons
+    function joinRoom() {
+        if (gameInstance) {
+            gameInstance.joinRoom();
+        }
+    }
+
+    function setReady() {
+        if (gameInstance) {
+            gameInstance.setReady();
+        }
+    }
+
+    // Entry point: Initialize the game instance when the window loads
+    window.onload = () => {
+        gameInstance = new TetrisBattle();
+    };
+    </script>
+</body>
+</html>
