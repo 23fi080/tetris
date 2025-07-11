@@ -1,55 +1,691 @@
 body {
-    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 10px;
+    background: #f4f4f4 url('https://i.postimg.cc/DZfryWsM/scifi-main-menu.jpg') center center / cover no-repeat;
+    font-family: 'Arial', sans-serif;
+    color: rgb(68, 65, 65);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh; /* Ensure body takes full viewport height */
+}
+.container {
+    max-width: 800px;
+    margin: 0 auto;
     display: flex;
     flex-direction: column;
     align-items: center;
-    background-color: #f0f0f0;
-    margin: 20px;
+    padding: 20px;
+    background: rgba(255, 255, 255, 0.05); /* Slightly darker background for container */
+    border-radius: 15px;
+    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+}
+h1 {
+    text-align: center;
+    color: #fff;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+    margin-bottom: 20px;
+}
+.lobby {
+    text-align: center;
+    padding: 20px;
+    margin-bottom: 20px;
+    width: 100%;
+}
+.lobby input {
+    width: calc(50% - 20px);
+    max-width: 180px;
+    margin: 8px;
+    padding: 10px 15px;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+    border-radius: 8px;
+    box-shadow: inset 0 2px 5px rgba(0,0,0,0.2);
+}
+.lobby input::placeholder {
+    color: rgba(255, 255, 255, 0.7);
+}
+.lobby button {
+    background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+    color: white;
+    padding: 12px 25px;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+    margin-top: 15px;
+}
+.lobby button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 15px rgba(0,0,0,0.4);
+    background: linear-gradient(45deg, #ff8e8e, #6ae0d5);
+}
+.lobby button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
 }
 
-#game-container {
+/* Character Selection Styles */
+.character-selection {
     display: flex;
-    gap: 50px;
+    justify-content: center;
+    gap: 15px;
+    margin: 20px 0;
+    flex-wrap: wrap;
+}
+
+.character-option {
+    background: rgba(255, 255, 255, 0.1);
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    border-radius: 10px;
+    padding: 10px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-align: center;
+    color: white;
+    font-weight: bold;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 80px; /* Fixed width for character option */
+    height: 100px; /* Fixed height for character option */
+    position: relative; /* For tooltip positioning */
+}
+
+.character-option:hover {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: #4ecdc4;
+    transform: translateY(-3px);
+}
+
+.character-option.selected {
+    background: linear-gradient(45deg, #4ecdc4, #00c6ff);
+    border-color: #fff;
+    box-shadow: 0 0 15px rgba(78, 205, 196, 0.6);
+    transform: translateY(-3px);
+}
+
+.character-option img {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin-bottom: 5px;
+    border: 2px solid rgba(255, 255, 255, 0.5);
+}
+
+.character-name {
+    font-size: 0.9em;
+    margin-top: 5px;
+    color: white;
+}
+
+/* Character ability tooltip */
+.character-tooltip {
+    position: absolute;
+    bottom: 110px; /* Position above the character option */
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.9);
+    color: white;
+    padding: 10px 15px;
+    border-radius: 8px;
+    font-size: 0.85em;
+    white-space: normal; /* Allow text to wrap */
+    z-index: 1000;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+    pointer-events: none;
+    max-width: 250px; /* Increased max-width */
+    min-width: 200px; /* Set minimum width */
+    text-align: center;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    line-height: 1.4; /* Better line spacing */
+}
+
+.character-tooltip::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 5px solid transparent;
+    border-top-color: rgba(0, 0, 0, 0.9);
+}
+
+.character-option:hover .character-tooltip {
+    opacity: 1;
+    visibility: visible;
+}
+
+.game-area {
+    display: none; /* Hidden by default */
+    justify-content: center;
+    gap: 20px;
+    align-items: flex-start;
+    flex-wrap: wrap; /* Allow wrapping on smaller screens */
+    position: relative; /* For attack indicator positioning */
+}
+.player-section {
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(10px);
+    border-radius: 12px;
+    padding: 15px;
+    text-align: center;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    flex: 1; /* Allow sections to grow/shrink */
+    min-width: 280px; /* Minimum width for each player section */
+    display: flex; /* Outer flex: column */
+    flex-direction: column; /* Stack h3, player-board-container, info, status, buttons vertically */
+    align-items: center; /* Center all contents horizontally */
+    position: relative; /* Crucial for absolute positioning of next-piece-display */
+}
+.player-section.opponent {
+    opacity: 0.8;
+    filter: grayscale(20%);
+}
+
+/* Character Display in Game Area */
+.character-display {
+    width: 60px;
+    height: 60px;
+    margin: 5px auto 10px auto; /* Center and provide some spacing */
+    border-radius: 50%;
+    overflow: hidden;
+    border: 2px solid #fff;
+    box-shadow: 0 0 8px rgba(255, 255, 255, 0.5);
+}
+
+.character-display img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* New wrapper for board and HP bar */
+.board-and-hp-wrapper {
+    display: flex;
+    flex-direction: row; /* Arrange items horizontally */
+    align-items: center; /* Vertically align items in the middle */
+    gap: 10px; /* Space between board and HP bar */
+    margin-bottom: 10px; /* Space below the board+HP group */
+}
+
+/* Main player canvas */
+.player-section canvas#playerCanvas {
+    border: 3px solid #fff;
+    border-radius: 8px;
+    background: #000;
+    display: block;
+    /* Removed auto margins, now handled by flexbox */
+}
+
+/* Opponent canvas styling */
+.player-section canvas#opponentCanvas {
+    border: 3px solid #fff; /* 白い枠を追加 */
+    border-radius: 8px;
+    background: #000;
+    display: block;
+    /* Removed auto margins, now handled by flexbox */
+}
+
+
+/* Next piece display styles */
+.next-piece-display {
+    position: absolute; /* Position relative to .player-section */
+    top: 1px; /* Aligns closer to the top */
+    right: -10px; /* Aligns closer to the right */
+    padding: 5px;
+    
+    border-radius: 8px;
+    
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    z-index: 100; /* Ensure it's above other elements if there's any overlap */
+}
+.next-piece-display canvas {
+    width: 72px; /* Adjusted width */
+    height: 72px; /* Adjusted height */
+    border: 2px solid #555;
+    background: #000;
+    border-radius: 5px;
+}
+
+.hold-piece-display {
+    position: absolute; 
+    top: 1px;
+    left: -10px;
+    padding: 5px;
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    z-index: 100;
+}
+
+.hold-piece-display canvas {
+    width: 72px;
+    height: 72px;
+    border: 2px solid #555;
+    background: #000;
+    border-radius: 5px;
+}
+
+.info {
+    margin-top: 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+}
+.score {
+    font-size: 1.1em;
+    font-weight: bold;
+    margin: 5px 0;
+    color: #e0e0e0;
+}
+.level { /* Added style for level display */
+    font-size: 1.1em;
+    font-weight: bold;
+    margin: 5px 0;
+    color: #e0e0e0;
+}
+.status {
+    font-size: 0.9em;
+    margin: 8px 0;
+    padding: 8px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.15);
+    font-weight: bold;
+}
+
+/* === 追加: スキルゲージのCSS === */
+.skill-gauge-container {
+    width: 160px;
+    height: 22px;
+    background-color: #2c3e50;
+    border: 2px solid #7f8c8d;
+    border-radius: 11px;
+    margin-top: 10px;
+    position: relative;
+    overflow: hidden;
+}
+.skill-gauge-fill {
+    width: 0%; /* 初期状態は0% */
+    height: 100%;
+    background: linear-gradient(90deg, #ff00ff, #00ffff);
+    transition: width 0.3s ease-in-out;
+    border-radius: 8px;
+}
+.skill-gauge-fill.ready {
+    animation: glow 1.5s infinite alternate;
+}
+.skill-gauge-text {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: white;
+    font-size: 12px;
+    font-weight: bold;
+    text-shadow: 1px 1px 2px black;
+    pointer-events: none;
+}
+
+@keyframes glow {
+    from { box-shadow: 0 0 5px #ff00ff, 0 0 10px #00ffff; }
+    to { box-shadow: 0 0 20px #ff00ff, 0 0 30px #00ffff; }
+}
+/* === ここまで === */
+
+.hp-bar-container {
+    /* HPバー全体を非表示にするため削除 */
+}
+
+.hp-bar-fill {
+    /* HPバーの塗り部分も削除 */
+}
+.waiting { color: #ffd700; }
+.ready { color: #00ff00; }
+.playing { color: #00bfff; }
+.winner { color: #00ff00; background: rgba(0, 255, 0, 0.25); }
+.loser { color: #ff4444; background: rgba(255, 68, 68, 0.25); }
+        
+/* General button style (used for game-over buttons as well) */
+button {
+    background: linear-gradient(45deg, #00c6ff, #0072ff);
+    color: white;
+    padding: 10px 20px;
+    margin-top: 10px;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+}
+button:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 12px rgba(0,0,0,0.4);
+    background: linear-gradient(45deg, #2eccfa, #2a9d8f);
+}
+button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+/* Specific styling for the ready button to center it */
+#readyBtn {
+    display: block; /* Make it a block element */
+    width: fit-content; /* Shrink to content width */
+    margin-left: auto; 
+    margin-right: auto; /* Center horizontally */
+    margin-top: 15px; /* Adjust top margin as needed */
+    padding: 12px 30px; /* Make it a bit bigger */
+    font-size: 16px;
+}
+
+.controls {
+    font-size: 0.85em;
+    opacity: 0.9;
+    margin-top: 15px;
+    line-height: 1.4;
+    color: #c0c0c0;
+    padding: 0 10px; /* パディングを追加して文字が詰まるのを防ぐ */
+}
+.attack-indicator {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(255, 0, 0, 0.85);
+    color: white;
+    padding: 8px 15px;
+    border-radius: 8px;
+    font-size: 1.2em;
+    font-weight: bold;
+    animation: attackPulse 0.8s ease-out forwards; /* Changed duration */
+    pointer-events: none;
+    z-index: 1000;
+    white-space: nowrap; /* Prevent text wrapping */
+}
+.attack-sent-indicator { /* For player's own attacks */
+    position: absolute;
+    top: 50%; /* Adjusted slightly for visibility */
+    left: 25%; /* Near player's board */
+    transform: translate(-50%, -50%);
+    background: rgba(0, 200, 255, 0.8); /* Blueish for sent attacks */
+    color: white;
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-size: 1.0em;
+    font-weight: bold;
+    animation: attackPulse 0.8s ease-out forwards;
+    pointer-events: none;
+    z-index: 1000;
+    white-space: nowrap;
+}
+@keyframes attackPulse {
+    0% { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
+    50% { opacity: 1; transform: translate(-50%, -50%) scale(1.1); }
+    100% { opacity: 0; transform: translate(-50%, -50%) scale(1); }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .container {
+        padding: 10px;
+    }
+    .game-area {
+        flex-direction: column;
+        align-items: center;
+    }
+    .player-section {
+        width: 100%;
+        margin-bottom: 15px;
+        padding-top: 15px; /* Reset top padding for consistency */
+    }
+    /* On small screens, position the next piece display below the main canvas */
+    .player-section canvas#playerCanvas {
+        margin: 0 auto 10px auto; /* Re-center main canvas with bottom margin */
+    }
+    .next-piece-display {
+        position: static; /* Reset positioning for small screens */
+        margin-top: 10px; /* Add margin when stacked below */
+        margin-left: auto;
+        margin-right: auto; /* Center horizontally when static */
+    }
+    .lobby input {
+        width: calc(100% - 20px); /* Full width on small screens */
+        max-width: none;
+        margin: 5px 0;
+    }
+}
+
+/* Game Over Overlay Styles */
+.game-over-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7); /* Dark semi-transparent background */
+    display: none; /* Hidden by default */
+    justify-content: center;
+    align-items: center;
+    z-index: 2000;
+    flex-direction: column;
+    text-align: center;
+    padding: 20px;
+    box-sizing: border-box; /* Include padding in width/height */
+}
+
+.game-over-content {
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(10px);
+    border-radius: 15px;
+    padding: 30px;
+    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    max-width: 90%;
+    color: white;
+}
+
+.game-over-content h2 {
+    font-size: 2em;
+    margin-bottom: 20px;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+}
+
+.game-over-content button {
+    display: block; /* Make buttons stack vertically */
+    width: 80%; /* Make buttons take more width */
+    max-width: 250px;
+    margin: 15px auto; /* Center buttons with more vertical spacing */
+    padding: 12px 25px;
+    font-size: 1.1em;
+    border-radius: 10px;
+    box-shadow: 0 6px 15px rgba(0,0,0,0.4);
+    transition: all 0.3s ease;
+}
+
+.game-over-content button:first-of-type {
+    background: linear-gradient(45deg, #4CAF50, #8BC34A); /* Greenish for play again */
+}
+.game-over-content button:first-of-type:hover {
+    background: linear-gradient(45deg, #66BB6A, #9CCC65);
+}
+
+.game-over-content button:last-of-type {
+    background: linear-gradient(45deg, #f44336, #FF7043); /* Reddish for home */
+}
+.game-over-content button:last-of-type:hover {
+    background: linear-gradient(45deg, #EF5350, #FF8A65);
+}
+
+/* New Countdown Overlay Styles */
+.countdown-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8); /* Darker background */
+    display: none; /* Hidden by default */
+    justify-content: center;
+    align-items: center;
+    z-index: 3000; /* Higher than game over overlay */
+}
+
+#countdownNumber {
+    font-size: 5em; /* Large font */
+    font-weight: bold;
+    color: #00ff00; /* Bright color */
+    text-shadow: 0 0 10px #00ff00, 0 0 20px #00ff00, 0 0 30px #00ff00; /* Glow effect */
+    animation: pulseScale 1s infinite alternate; /* Simple pulse animation */
+}
+
+@keyframes pulseScale {
+    from { transform: scale(0.8); opacity: 0.7; }
+    to { transform: scale(1.2); opacity: 1; }
+}
+
+/* Settings Button */
+.settings-btn {
+    position: absolute;
+    bottom: 10px;
+    right: 10px;
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+    padding: 8px 12px;
+    border-radius: 5px;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+/* Settings Modal */
+.settings-modal {
+    display: none; /* Hidden by default */
+    position: fixed;
+    z-index: 4000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0,0,0,0.6);
+    justify-content: center;
+    align-items: center;
+}
+
+.settings-content {
+    background: rgba(20, 20, 30, 0.9);
+    backdrop-filter: blur(10px);
+    margin: auto;
+    padding: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    width: 80%;
+    max-width: 400px;
+    border-radius: 10px;
+    color: white;
+}
+
+.settings-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+    align-items: center;
     margin-bottom: 20px;
 }
 
-canvas {
-    background-color: #333;
-    border: 2px solid #555;
+.settings-grid label {
+    text-align: right;
 }
 
-#player-area, #opponent-area {
+.key-input {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: white;
+    padding: 8px;
+    border-radius: 5px;
     text-align: center;
+    cursor: pointer;
 }
 
-#myHp, #opponentHp {
-    font-size: 24px;
+.key-input:focus {
+    background: rgba(0, 150, 255, 0.3);
+    outline: none;
+}
+
+.settings-error {
+    color: #ff6b6b;
+    margin-bottom: 15px;
+    text-align: center;
+    min-height: 1.2em;
+}
+
+.settings-buttons {
+    display: flex;
+    justify-content: space-around;
+}
+
+.player-ability {
+    margin: 8px 0 8px 32px;
+    padding: 16px 20px;
+    background: rgba(0,0,0,0.32);
+    color: #fff;
+    border-radius: 12px;
+    font-size: 1em;
     font-weight: bold;
-    color: #e63946; /* 赤色 */
-    margin-top: 10px;
+    min-width: 200px;
+    max-width: 320px;
+    text-align: left;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.12);
+    border: 1.5px solid rgba(255,255,255,0.18);
+    display: block;
+    line-height: 1.6;
+}
+@media (max-width: 900px) {
+    .container > div[style*='flex-direction: row'] {
+        flex-direction: column !important;
+        align-items: stretch !important;
+    }
+    .player-ability {
+        margin-left: 0 !important;
+        margin-top: 18px !important;
+        max-width: 100%;
+    }
 }
 
-#message-area {
-    width: 500px;
-    border: 1px solid #ccc;
-    padding: 10px;
-    background-color: #fff;
-}
-
-#messageInput {
-    width: calc(100% - 70px);
-    padding: 5px;
-}
-
-#sendButton {
-    width: 60px;
-    padding: 5px;
-}
-
-#messages {
-    margin-top: 10px;
-    border-top: 1px solid #eee;
-    padding-top: 5px;
-    max-height: 150px;
-    overflow-y: auto;
+/* CSS追加 */
+.ability-side {
+    position: absolute;
+    left: -400px; /* さらに左に移動 */
+    top: 0;
+    transform: none;
+    z-index: 1000;
+    min-width: 180px;
+    max-width: 260px;
+    color: #fff;
+    background: rgba(0,0,0,0.5);
+    border-radius: 12px;
+    padding: 18px 20px;
+    font-size: 1.1em;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.12);
+    text-align: left;
+    display: none;
 }
