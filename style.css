@@ -1,7 +1,7 @@
 body {
     margin: 0;
     padding: 10px;
-    background: #f4f4f4 url('https://i.postimg.cc/DZfryWsM/scifi-main-menu.jpg') center center / cover no-repeat;
+    background: #f4f4f4 url('./images/background.jpg') center center / cover no-repeat;
     font-family: 'Arial', sans-serif;
     color: rgb(68, 65, 65);
     display: flex;

@@ -1,14 +1,17 @@
 <!DOCTYPE html>
 <html lang="ja">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>テトリスバトル</title>
     <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
     <div class="container">
-        <a href="https://ja.cooltext.com"><img src="https://images.cooltext.com/5733904.png" width="593" height="111" alt="BATTLE TETRIS" /></a>
+        <a href="https://ja.cooltext.com"><img src="https://images.cooltext.com/5733904.png" width="593" height="111"
+                alt="BATTLE TETRIS" /></a>
         <div class="lobby" id="lobby">
             <div>
                 <input type="text" id="playerName" placeholder="プレイヤー名" value="Player1">
@@ -21,7 +24,8 @@
                     <div class="character-tooltip">同時に複数ラインを消すとHPが多めに回復</div>
                 </div>
                 <div class="character-option" data-character="char2">
-                    <img src="https://i.postimg.cc/g0h2tTSv/ガードチャージdepixelizer-1453453073611-Photoroom.png" alt="ダウンバリア">
+                    <img src="https://i.postimg.cc/g0h2tTSv/ガードチャージdepixelizer-1453453073611-Photoroom.png"
+                        alt="ダウンバリア">
                     <div class="character-name">ダウンバリア</div>
                     <div class="character-tooltip">HP50%以下になるとダメージ20%カット</div>
                 </div>
@@ -53,7 +57,7 @@
                     </div>
                     <div class="info">
                         <div class="score">スコア: <span id="playerScore">0</span></div>
-                        <div class="level">レベル: <span id="playerLevel">1</span></div> <div class="skill-gauge-container">
+                        <div class="skill-gauge-container">
                             <div id="skillGaugeFill" class="skill-gauge-fill"></div>
                             <div id="skillGaugeText" class="skill-gauge-text">スキル</div>
                         </div>
@@ -72,49 +76,50 @@
                     </div>
                     <div class="info">
                         <div class="score">スコア: <span id="opponentScore">0</span></div>
-                        <div class="level">レベル: <span id="opponentLevel">1</span></div> </div>
-                    <div id="opponentStatus" class="status waiting">待机中...</div>
+
+                        <div id="opponentStatus" class="status waiting">待機中...</div>
+                    </div>
+                </div>
+            </div>
+            <div id="playerAbility" class="player-ability ability-side" style="display: none;"></div>
+        </div>
+        <div id="gameOverOverlay" class="game-over-overlay">
+            <div class="game-over-content">
+                <h2 id="gameOverMessage"></h2>
+                <button id="playAgainBtn">もう一度対戦</button>
+                <button id="returnToHomeBtn">ホームに戻る</button>
+            </div>
+        </div>
+        <div id="countdownOverlay" class="countdown-overlay">
+            <span id="countdownNumber"></span>
+        </div>
+        <div id="settingsModal" class="settings-modal">
+            <div class="settings-content">
+                <h2>キー設定</h2>
+                <div class="settings-grid">
+                    <label for="keyMoveLeft">左移動:</label>
+                    <input type="text" id="keyMoveLeft" class="key-input" readonly>
+                    <label for="keyMoveRight">右移動:</label>
+                    <input type="text" id="keyMoveRight" class="key-input" readonly>
+                    <label for="keySoftDrop">ソフトドロップ:</label>
+                    <input type="text" id="keySoftDrop" class="key-input" readonly>
+                    <label for="keyHardDrop">ハードドロップ:</label>
+                    <input type="text" id="keyHardDrop" class="key-input" readonly>
+                    <label for="keyRotate">回転:</label>
+                    <input type="text" id="keyRotate" class="key-input" readonly>
+                    <label for="keyHold">ホールド:</label>
+                    <input type="text" id="keyHold" class="key-input" readonly>
+                    <label for="keySkill">スキル:</label>
+                    <input type="text" id="keySkill" class="key-input" readonly>
+                </div>
+                <div id="settingsError" class="settings-error"></div>
+                <div class="settings-buttons">
+                    <button id="saveSettingsBtn">保存</button>
+                    <button id="cancelSettingsBtn">キャンセル</button>
                 </div>
             </div>
         </div>
-        <div id="playerAbility" class="player-ability ability-side" style="display: none;"></div>
-    </div>
-    <div id="gameOverOverlay" class="game-over-overlay">
-        <div class="game-over-content">
-            <h2 id="gameOverMessage"></h2>
-            <button id="playAgainBtn">もう一度対戦</button>
-            <button id="returnToHomeBtn">ホームに戻る</button>
-        </div>
-    </div>
-    <div id="countdownOverlay" class="countdown-overlay">
-        <span id="countdownNumber"></span>
-    </div>
-    <div id="settingsModal" class="settings-modal">
-        <div class="settings-content">
-            <h2>キー設定</h2>
-            <div class="settings-grid">
-                <label for="keyMoveLeft">左移動:</label>
-                <input type="text" id="keyMoveLeft" class="key-input" readonly>
-                <label for="keyMoveRight">右移動:</label>
-                <input type="text" id="keyMoveRight" class="key-input" readonly>
-                <label for="keySoftDrop">ソフトドロップ:</label>
-                <input type="text" id="keySoftDrop" class="key-input" readonly>
-                <label for="keyHardDrop">ハードドロップ:</label>
-                <input type="text" id="keyHardDrop" class="key-input" readonly>
-                <label for="keyRotate">回転:</label>
-                <input type="text" id="keyRotate" class="key-input" readonly>
-                <label for="keyHold">ホールド:</label>
-                <input type="text" id="keyHold" class="key-input" readonly>
-                <label for="keySkill">スキル:</label>
-                <input type="text" id="keySkill" class="key-input" readonly>
-            </div>
-            <div id="settingsError" class="settings-error"></div>
-            <div class="settings-buttons">
-                <button id="saveSettingsBtn">保存</button>
-                <button id="cancelSettingsBtn">キャンセル</button>
-            </div>
-        </div>
-    </div>
-    <script src="script.js"></script>
+        <script src="script.js"></script>
 </body>
+
 </html>
