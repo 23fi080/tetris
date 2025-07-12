@@ -9,8 +9,9 @@
 </head>
 
 <body>
+    <div id="stripeOverlay" class="stripe-overlay"></div>
     <div class="container">
-        <a href="https://ja.cooltext.com"><img src="https://images.cooltext.com/5733904.png" width="593" height="111"
+        <img id="titleImage" src='./images/taitoru.png' width="593" height="111"
                 alt="BATTLE TETRIS" /></a>
         <div class="lobby" id="lobby">
             <div>
@@ -19,18 +20,18 @@
             </div>
             <div class="character-selection" id="characterSelection">
                 <div class="character-option selected" data-character="char1">
-                    <img src="./images/greench.png" alt="ヒールリンク">
-                    <div class="character-name">ヒールリンク</div>
-                    <div class="character-tooltip">同時に複数ラインを消すとHPが多めに回復</div>
+                    <img src="./images/syado.png" alt="シャドーミラー">
+                    <div class="character-name">シャドーミラー</div>
+                    <div class="character-tooltip">一定の時間相手の盤面を隠せる</div>
                 </div>
                 <div class="character-option" data-character="char2">
-                    <img src="./images/bluech.png"
+                    <img src="./images/down1.png"
                         alt="ダウンバリア">
                     <div class="character-name">ダウンバリア</div>
                     <div class="character-tooltip">HP50%以下になるとダメージ20%カット</div>
                 </div>
                 <div class="character-option" data-character="char3">
-                    <img src="./images/redch.png" alt="チェインブースト">
+                    <img src="./images/attack.png" alt="チェインブースト">
                     <div class="character-name">チェインブースト</div>
                     <div class="character-tooltip">連続してラインを消すと攻撃力が徐々に上昇（リセット式）</div>
                 </div>
@@ -51,12 +52,14 @@
                     </div>
                     <div class="board-and-hp-wrapper">
                         <canvas id="playerCanvas" width="180" height="360"></canvas>
+                        <div class="stripeOverlay"></div>
                     </div>
                     <div class="next-piece-display">
                         <canvas id="nextPieceCanvas" width="72" height="72"></canvas>
                     </div>
                     <div class="info">
                         <div class="score">スコア: <span id="playerScore">0</span></div>
+                        
                         <div class="skill-gauge-container">
                             <div id="skillGaugeFill" class="skill-gauge-fill"></div>
                             <div id="skillGaugeText" class="skill-gauge-text">スキル</div>
@@ -73,10 +76,11 @@
                     </div>
                     <div class="board-and-hp-wrapper">
                         <canvas id="opponentCanvas" width="180" height="360"></canvas>
+                        <div class="stripeOverlay"></div>
                     </div>
                     <div class="info">
                         <div class="score">スコア: <span id="opponentScore">0</span></div>
-
+                        
                         <div id="opponentStatus" class="status waiting">待機中...</div>
                     </div>
                 </div>
@@ -121,5 +125,4 @@
         </div>
         <script src="script.js"></script>
 </body>
-
 </html>
