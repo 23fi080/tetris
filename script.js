@@ -340,7 +340,7 @@ class TetrisBattle {
     initWebSocket() {
         // Render.com deployed server URL (use wss:// for secure WebSocket)
         const wsUrl = "wss://test-lgkt.onrender.com";  // Changed to wss for secure connection
-        // const wsUrl = "ws://localhost:3000"; // ローカルサーバー用に変更
+        //const wsUrl = "ws://localhost:3000"; // ローカルサーバー用に変更
 
         this.elements.connectionStatus.textContent = "サーバーに接続中...";
         this.elements.connectionStatus.className = 'status waiting';
@@ -1493,15 +1493,22 @@ class TetrisBattle {
     addAttackLines(numLines, attackType) {
         // Display attack indicator
         this.displayAttackIndicator(numLines, attackType, false);
+        let linesToReceive = numLines; // 受け取るべきお邪魔ブロックの初期ライン数
+        let linesBlockedCount = 0;    // 今回シールドで防いだライン数
 
-        if (this.shieldUsesRemaining > 0 && actualDamage > 0) {
-            console.log(`シールド発動！攻撃 ${actualDamage} ラインを無効化しました。残りシールド数: ${this.shieldUsesRemaining - 1}`);
+        // === シールドによる攻撃無効化ロジック (ここを修正) ===
+        // シールドが残っていて、かつ受け取るべきラインがある限りループ
+        while (this.shieldUsesRemaining > 0 && linesToReceive > 0) {
             this.shieldUsesRemaining--; // シールドを1つ消費
-            actualDamage = 0; // 無効化されたため、HPダメージもラインも0にする
-            numLines = 0; // 後続のゴミライン追加ロジックのためにライン数も0にする
-            this.displayAttackIndicator(0, 'シールド発動！', false); // シールド発動の表示
+            linesToReceive--;         // 受け取るべきラインを1つ減らす
+            linesBlockedCount++;      // 防いだライン数をカウント
+            console.log(`シールド発動！1ラインを無効化しました。残りシールド数: ${this.shieldUsesRemaining}`);
         }
 
+        // シールドでブロックしたラインがあれば、その旨を表示
+        if (linesBlockedCount > 0) {
+            this.displayAttackIndicator(linesBlockedCount, 'シールドでブロック！', false);
+        }
 
         this.updateHpDisplay();
 

@@ -192,7 +192,7 @@ class GameRoom {
 
             case 'defenceShield':
                 //自分に２回お邪魔ブロック無効を転送
-                if (p.ws === ws &&ws.readyState === WebSocket.OPEN) {
+                if (p.ws === ws && ws.readyState === WebSocket.OPEN) {
                     ws.send(JSON.stringify({
                         type: 'defenceShield',
                         shieldnum: message.shieldnum || 2 // Default to 2 if not provided
@@ -200,7 +200,6 @@ class GameRoom {
                 }
 
                 break;
-
             case 'linesCleared':
                 // 攻撃ライン送信
                 if (message.lines > 0) { // 0より大きい場合のみ送信
