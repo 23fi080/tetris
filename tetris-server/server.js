@@ -74,7 +74,7 @@ class GameRoom {
         };
         this.rematchReady = {};
     }
-    
+
     // GameRoomクラスの addPlayer メソッドを、この内容に丸ごと置き換えてください
     addPlayer(ws, playerId, character) {
         if (this.players.length >= 2) {
@@ -106,10 +106,10 @@ class GameRoom {
                 playerCount: this.players.length
             }
         }));
-        
+
         return true;
     }
-    
+
     removePlayer(ws) {
         this.players = this.players.filter(player => player.ws !== ws);
         this.broadcast({
@@ -117,7 +117,7 @@ class GameRoom {
             playerCount: this.players.length
         });
     }
-    
+
     broadcast(message, exclude = null) {
         this.players.forEach(player => {
             if (player.ws !== exclude && player.ws.readyState === WebSocket.OPEN) {
@@ -125,11 +125,11 @@ class GameRoom {
             }
         });
     }
-    
+
     handleMessage(ws, message) {
         const player = this.players.find(p => p.ws === ws);
         if (!player) return;
-        
+
         switch (message.type) {
             case 'ready':
                 player.ready = true;
@@ -137,13 +137,13 @@ class GameRoom {
                     type: 'playerReady',
                     playerId: player.id
                 });
-                
+
                 // 全員がreadyならゲーム開始
                 if (this.players.length === 2 && this.players.every(p => p.ready)) {
                     this.startGame();
                 }
                 break;
-                
+
             case 'boardUpdate':
                 // プレイヤーのボード状態を更新
                 const playerIndex = this.players.indexOf(player);
@@ -156,7 +156,7 @@ class GameRoom {
                     this.gameState.scores[1] = message.score;
                     this.gameState.levels[1] = message.level;
                 }
-                
+
                 // プレイヤーのHPも更新
                 if (message.hp !== undefined) {
                     player.hp = message.hp;
@@ -177,7 +177,7 @@ class GameRoom {
                     }
                 });
                 break;
-                
+
             case 'hideOpponentBoard':
                 // 相手に隠し指示を転送
                 this.players.forEach((p) => {
@@ -189,7 +189,18 @@ class GameRoom {
                     }
                 });
                 break;
-                
+
+            case 'defenceShield':
+                //自分に２回お邪魔ブロック無効を転送
+                if (p.ws === ws &&ws.readyState === WebSocket.OPEN) {
+                    ws.send(JSON.stringify({
+                        type: 'defenceShield',
+                        shieldnum: message.shieldnum || 2 // Default to 2 if not provided
+                    }));
+                }
+
+                break;
+
             case 'linesCleared':
                 // 攻撃ライン送信
                 if (message.lines > 0) { // 0より大きい場合のみ送信
@@ -200,7 +211,7 @@ class GameRoom {
                         // 実際のゲームでは、キャラクター能力によるダメージ軽減などを考慮する必要があります
                         const targetHp = Math.max(0, (targetPlayer.hp || 10) - message.lines);
                         targetPlayer.hp = targetHp;
-                        
+
                         this.broadcast({
                             type: 'attack',
                             lines: message.lines, // クライアントから送られた値をそのまま使う
@@ -211,7 +222,7 @@ class GameRoom {
                     }
                 }
                 break;
-                
+
             case 'gameOver':
                 this.broadcast({
                     type: 'gameEnd',
@@ -233,9 +244,27 @@ class GameRoom {
                     this.broadcast({ type: 'rematchStart' });
                 }
                 break;
+            // === 追加: attackメッセージの自動転送 ===
+            case 'attack':
+                console.log('attackメッセージ受信', message); // 追加: attackメッセージの受信ログ
+                const targetPlayer = this.players.find(p => p.ws !== ws);
+                if (targetPlayer) {
+                    const targetHp = Math.max(0, (targetPlayer.hp || 10) - (message.lines || 0));
+                    targetPlayer.hp = targetHp;
+                    if (targetPlayer.ws.readyState === WebSocket.OPEN) {
+                        targetPlayer.ws.send(JSON.stringify({
+                            type: 'attack',
+                            lines: message.lines,
+                            attackType: message.attackType || 'ATTACK',
+                            hp: targetHp
+                        }));
+                    }
+                }
+                break;
+            // === ここまで ===
         }
     }
-    
+
     startGame() {
         this.gameState.started = true;
         this.broadcast({
@@ -251,11 +280,11 @@ let roomIdCounter = 1;
 
 wss.on('connection', (ws) => {
     console.log('新しいクライアントが接続しました');
-    
+
     ws.on('message', async (data) => {
         try {
             const message = JSON.parse(data);
-            
+
             switch (message.type) {
                 case 'joinRoom':
                     let room = rooms.get(message.roomId);
@@ -263,7 +292,7 @@ wss.on('connection', (ws) => {
                         room = new GameRoom(message.roomId || `room_${roomIdCounter++}`);
                         rooms.set(room.id, room);
                     }
-                    
+
                     if (room.addPlayer(ws, message.playerId, message.character)) {
                         ws.room = room;
                         ws.playerId = message.playerId;
@@ -281,7 +310,7 @@ wss.on('connection', (ws) => {
                         }));
                     }
                     break;
-                    
+
                 default:
                     if (ws.room) {
                         ws.room.handleMessage(ws, message);
@@ -292,7 +321,7 @@ wss.on('connection', (ws) => {
             console.error('メッセージ処理エラー:', error);
         }
     });
-    
+
     ws.on('close', async () => {
         console.log('クライアントが切断しました');
         if (ws.room) {
@@ -308,7 +337,7 @@ wss.on('connection', (ws) => {
             });
         }
     });
-    
+
     ws.on('error', (error) => {
         console.error('WebSocketエラー:', error);
     });
